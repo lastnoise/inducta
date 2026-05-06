@@ -1,0 +1,2059 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>inducta</title>
+<style>
+:root{
+ --bg:#09090d;
+ --panel:#11111a;
+ --panel2:#171722;
+ --tile:#14141e;
+ --tile2:#1c1c29;
+ --text:#d8d5de;
+ --muted:#8a8593;
+ --dim:#5f5a68;
+ --warn:#d6b34a;
+ --good:#70d8e8;
+ --eco:#9b5cff;
+ --arb:#4fb8ff;
+ --lat:#39f56f;
+ --exe:#ff9a4f;
+ --bad:#ff6868;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;}
+body{display:flex;justify-content:center;align-items:center;padding:18px;touch-action:manipulation;}
+#app{width:min(520px,100%);}
+.header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;}
+.title{font-size:24px;font-weight:700;letter-spacing:.02em;text-transform:lowercase;color:var(--eco);}
+.sub{
+ font-size:12px;
+ color:var(--muted);
+ line-height:1.22;
+ margin-top:4px;
+ white-space:normal;
+ overflow:visible;
+ text-overflow:clip;
+ max-width:62vw;
+}
+.buttons{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.debugButtons{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:8px 10px;
+ row-gap:10px;
+ justify-items:stretch;
+ align-items:start;
+}
+.debugButtons button{width:100%;}
+.debugButtons .helpAction{
+ color:#cfc9ff;
+ border-color:#3a3650;
+ background:#1a1930;
+}
+.debugButtons .debugLabel{
+ grid-column:1 / span 2;
+ text-align:center;
+ font-size:10px;
+ color:var(--muted);
+ line-height:1;
+ margin-top:-2px;
+ opacity:.78;
+}
+button{background:#1a1a25;color:var(--text);border:1px solid #2c2a38;border-radius:10px;padding:9px 12px;font:inherit;font-size:13px;cursor:pointer;}
+button:active{transform:translateY(1px);background:#242434;}
+button.primary{border-color:#45405b;background:#202033;}
+button.danger{border-color:#56303a;color:#ffb7b7;}
+.status{background:rgba(17,17,26,.88);border:1px solid #232230;border-radius:14px;padding:7px 10px;margin-bottom:8px;font-size:11px;line-height:1.45;opacity:.72;}
+.row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.muted{color:var(--muted)}
+.good{color:var(--good)}
+.warn{color:var(--warn)}
+.eco{color:var(--eco)}
+.arb{color:var(--arb)}
+.lat{color:var(--lat)}
+.exe{color:var(--exe)}
+.bad{color:var(--bad)}
+.releaseText{color:#ff9a9a}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:14px 0;position:relative;}
+.tile{aspect-ratio:1/1;background:linear-gradient(180deg,#171722,#101018);border:1px solid #272536;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:clamp(24px,9vw,46px);font-weight:800;letter-spacing:.01em;user-select:none;position:relative;z-index:1;box-shadow:inset 0 0 0 1px rgba(255,255,255,.015),0 8px 22px rgba(0,0,0,.22);}
+.tile:active{background:#222232;transform:translateY(1px);}
+.tile.selected{outline:2px solid rgba(215,103,255,.65);box-shadow:0 0 0 4px rgba(215,103,255,.12),0 10px 26px rgba(0,0,0,.28);}
+.tile.targetable{outline:2px solid rgba(255,255,255,.10);}
+.tile.badtarget{opacity:.35;filter:saturate(.4);}
+.tile.empty{color:#34313d}
+
+.log{min-height:0;background:transparent;border:0;padding:4px 4px;font-size:12px;line-height:1.25;color:var(--dim);text-align:center;}
+.choicePanel{display:none!important;background:rgba(20,20,30,.97);border:1px solid #323044;border-radius:14px;padding:10px 12px;margin:12px 0;}
+.choicePanel.visible{display:block}
+.choiceTitle{font-size:13px;color:var(--muted);margin-bottom:9px;}
+.choiceBtns{display:flex;gap:8px;flex-wrap:wrap}
+.help{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10;padding:18px;overflow:auto;}
+.help.visible{display:block}
+.helpBox{max-width:680px;margin:20px auto;background:#101018;border:1px solid #2b2938;border-radius:18px;padding:18px;box-shadow:0 18px 60px rgba(0,0,0,.55);}
+.helpBox h1{margin:0 0 10px;font-size:22px;text-transform:lowercase}
+.helpBox h2{font-size:15px;margin:18px 0 7px;color:#f0eef6}
+.helpBox p,.helpBox li{font-size:13px;line-height:1.5;color:#cbc6d3}
+.helpBox ul{padding-left:20px;margin-top:6px}
+.footerKey{font-size:12px;color:var(--muted);line-height:1.48;margin:6px 0 10px;display:flex;flex-wrap:wrap;justify-content:center;gap:10px;opacity:.85;}
+.collapse{border-color:rgba(180,220,90,.55);box-shadow:0 0 0 3px rgba(180,220,90,.07);}
+@media (max-width:420px){
+ body{padding:12px}
+ .tile{border-radius:14px}
+ .header{margin-bottom:10px}
+ button{padding:8px 10px}
+}
+
+.rootOptions{
+ position:absolute;
+ inset:8px;
+ display:flex;
+ flex-direction:column; max-width:100%;
+ gap:8px;
+ justify-content:center;
+ align-items:stretch;
+ z-index:3;
+}
+.rootOptions button{
+ padding:8px 6px;
+ border-radius:10px;
+ font-size:clamp(12px,3.2vw,15px);
+ background:#202033;
+ border:1px solid #45405b;
+}
+.rootOptions button.cancel{
+ background:#161620;
+ border-color:#2c2a38;
+ color:var(--muted);
+}
+.tile.rootChoosing{
+ outline:2px solid rgba(215,103,255,.75);
+ box-shadow:0 0 0 4px rgba(215,103,255,.12),0 10px 26px rgba(0,0,0,.28);
+}
+
+
+.watcherWrap{
+ display:flex;
+ justify-content:center;
+ align-items:center;
+ margin:10px 0 4px;
+}
+.watcher{
+ width:78px;
+ height:78px;
+ border:1px solid rgba(255,95,210,.86);
+ border-radius:7px;
+ background:#ff5fd2;
+ color:#1b0620;
+ position:relative;
+ display:flex;
+ justify-content:center;
+ align-items:center;
+ cursor:pointer;
+ box-shadow:0 0 14px rgba(255,95,210,.34);
+}
+.watcher::before{
+ content:"";
+ position:absolute;
+ width:42px;
+ height:21px;
+ border-radius:999px;
+ background:#2a0c34;
+ box-shadow:0 0 0 1px rgba(255,95,210,.28);
+}
+.watcher::after{
+ content:"";
+ position:absolute;
+ width:10px;
+ height:10px;
+ border-radius:999px;
+ background:#ffb7ee;
+ opacity:.96;
+ box-shadow:0 0 6px rgba(255,95,210,.52);
+}
+.watcher:active{transform:translateY(1px);}
+.watcherLabel{
+ text-align:center;
+ font-size:12px;
+ color:var(--dim);
+ line-height:1;
+ margin-bottom:2px;
+}
+.watcher.pulse{
+ animation:watcherPulse 1.35s ease-in-out infinite;
+}
+@keyframes watcherPulse{
+ 0%{box-shadow:0 0 10px rgba(255,95,210,.28);}
+ 50%{box-shadow:0 0 24px rgba(255,95,210,.72);}
+ 100%{box-shadow:0 0 10px rgba(255,95,210,.28);}
+}
+
+body.collapse-state .watcher.resetHold{
+ animation:watcherResetCharge 3s linear forwards;
+ transform-origin:center center;
+}
+@keyframes watcherResetCharge{
+ 0%{
+  transform:scale(1);
+  box-shadow:0 0 10px rgba(255,95,210,.30);
+ }
+ 35%{
+  transform:scale(1.10);
+  box-shadow:0 0 18px rgba(255,95,210,.46);
+ }
+ 70%{
+  transform:scale(1.25);
+  box-shadow:0 0 28px rgba(255,95,210,.66);
+ }
+ 100%{
+  transform:scale(1.42);
+  box-shadow:0 0 38px rgba(255,95,210,.88);
+ }
+}
+
+
+
+
+
+.tile.hasPreview::after{
+ content:"";
+ position:absolute;
+ opacity:.45;
+ pointer-events:none;
+ filter:drop-shadow(0 0 4px currentColor);
+ z-index:2;
+}
+.tile.previewDanger::after{
+ animation:previewDangerPulse .72s ease-in-out infinite;
+ opacity:.86;
+ filter:drop-shadow(0 0 7px currentColor);
+}
+@keyframes previewDangerPulse{
+ 0%{opacity:.42;filter:drop-shadow(0 0 3px currentColor);}
+ 50%{opacity:1;filter:drop-shadow(0 0 10px currentColor);}
+ 100%{opacity:.42;filter:drop-shadow(0 0 3px currentColor);}
+}
+.tile.preview-arbiter::after{color:var(--arb);}
+.tile.preview-latcher::after{color:var(--lat);}
+.tile.preview-executor::after{color:var(--exe);}
+.tile.preview-mixed::after{color:var(--warn);}
+
+.tile.preview-left::after,
+.tile.preview-right::after{
+ top:14%;
+ bottom:14%;
+ width:7px;
+ background-repeat:repeat-y;
+ background-size:7px 18px;
+ background-image:linear-gradient(135deg, transparent 0 34%, currentColor 35% 49%, transparent 50% 100%);
+}
+.tile.preview-left::after{left:-6px;}
+.tile.preview-right::after{right:-6px;}
+
+.tile.preview-top::after,
+.tile.preview-bottom::after{
+ left:14%;
+ right:14%;
+ height:7px;
+ background-repeat:repeat-x;
+ background-size:18px 7px;
+ background-image:linear-gradient(135deg, transparent 0 34%, currentColor 35% 49%, transparent 50% 100%);
+}
+.tile.preview-top::after{top:-6px;}
+.tile.preview-bottom::after{bottom:-6px;}
+
+
+
+.chargeToken{color:#7f6dff;}
+.flareToken{color:#ff5fd2;}
+.rootOptions{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:8px;
+ align-items:center;
+}
+.rootOptions button{
+ min-width:0;
+ font-size:clamp(18px,5vw,24px);
+ font-weight:800;
+}
+.rootOptions button.rootFlare{
+ color:#ff5fd2;
+ border-color:rgba(255,95,210,.72);
+ background:rgba(255,95,210,.10);
+}
+.rootOptions button.rootCharge{
+ color:#7f6dff;
+ border-color:rgba(127,109,255,.72);
+ background:rgba(127,109,255,.10);
+}
+.rootOptions button.rootCancel{
+ grid-column:1 / span 2;
+ font-size:clamp(12px,3.2vw,14px);
+ font-weight:700;
+}
+
+
+.rootOptions{
+ inset:9px;
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ grid-template-rows:1fr auto;
+ gap:8px;
+ align-items:stretch;
+}
+.rootOptions button.rootFlare,
+.rootOptions button.rootCharge{
+ height:100%;
+ min-height:72px;
+ border-radius:16px;
+ font-size:clamp(26px,7vw,36px);
+ font-weight:900;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+}
+.rootOptions button.rootCancel{
+ grid-column:1 / span 2;
+ min-height:34px;
+ border-radius:12px;
+ font-size:clamp(12px,3.2vw,14px);
+ font-weight:700;
+ color:var(--eco);
+ border-color:rgba(155,92,255,.72);
+ background:rgba(155,92,255,.10);
+}
+
+
+/* header polish: let mobile subtitle breathe without fighting debug buttons */
+@media (max-width:420px){
+ .header{
+  display:grid;
+  grid-template-columns:1fr auto;
+  grid-template-areas:
+   "brand buttons"
+   "sub buttons";
+  align-items:start;
+  column-gap:10px;
+  row-gap:3px;
+ }
+ .header > div:first-child{display:contents;}
+ .title{grid-area:brand;}
+ .sub{
+  grid-area:sub;
+  max-width:none;
+  font-size:12px;
+  line-height:1.22;
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+ }
+ .buttons{
+  grid-area:buttons;
+  align-self:start;
+ }
+ .buttons button{
+  padding:7px 9px;
+  font-size:12px;
+  min-width:0;
+ }
+}
+
+
+@media (max-width:420px){
+ .buttons{
+  grid-area:buttons;
+  align-self:start;
+ }
+ .debugButtons{
+  gap:7px 8px;
+  row-gap:8px;
+ }
+ .buttons button{
+  width:100%;
+  padding:7px 8px;
+  font-size:12px;
+  text-align:center;
+ }
+}
+
+
+/* removed */ .globalWarning .status{border-color:rgba(180,220,90,.8);box-shadow:0 0 12px rgba(180,220,90,.35);}
+/* removed */ .globalDanger .status{border-color:rgba(255,80,80,.9);box-shadow:0 0 18px rgba(255,80,80,.6);}
+.globalDanger{animation:dangerPulse .6s ease-in-out infinite;}
+@keyframes dangerPulse{
+ 0%{filter:brightness(1);}
+ 50%{filter:brightness(1.15);}
+ 100%{filter:brightness(1);}
+}
+
+
+.boardDanger #board{
+ box-shadow:
+  0 0 28px rgba(255,80,80,.48),
+  0 0 48px rgba(255,80,80,.20);
+ animation:boardDangerPulse .6s ease-in-out infinite;
+}
+@keyframes boardDangerPulse{
+ 0%{filter:brightness(1);}
+ 50%{filter:brightness(1.08);}
+ 100%{filter:brightness(1);}
+}
+
+
+@media (max-width: 700px){
+ .legend-row{
+  font-size:14px;
+  gap:6px;
+  flex-wrap:wrap;
+ }
+}
+
+
+body.collapse-state .tile{
+ background:linear-gradient(180deg,#070709,#050506);
+ border-color:rgba(120,120,140,.18);
+ box-shadow:none;
+}
+
+body.collapse-state .tile .token{
+ filter:saturate(.15) brightness(.55);
+ color:#7f8594 !important;
+ text-shadow:none !important;
+}
+
+body.collapse-state .tile.selected{
+ border-color:rgba(120,120,140,.28);
+ box-shadow:none;
+}
+
+body.collapse-state .observeWrap{
+ opacity:.92;
+}
+
+body.collapse-state .observeBtn{
+ filter:saturate(.75) brightness(.92);
+}
+
+body.collapse-state #log{
+ color:#8d93a1 !important;
+}
+
+body.collapse-state .footerKey{
+ opacity:.45;
+}
+
+</style>
+</head>
+<body>
+<div id="app">
+ <div class="header">
+  <div>
+   <div class="title">inducta</div>
+   <div class="sub">tap to act<br>hold the system together</div>
+  </div>
+  <div class="buttons debugButtons">
+   <button id="restartBtn" class="danger">restart</button>
+   <button id="helpBtn" class="helpAction">help</button>
+   <button id="undoBtn">undo</button>
+   <button id="redoBtn">redo</button>
+   <div class="debugLabel">debug</div>
+  </div>
+ </div>
+
+ <div id="status" class="status"></div>
+ <div id="board" class="board"></div>
+
+ <div id="choicePanel" class="choicePanel">
+  <div id="choiceTitle" class="choiceTitle"></div>
+  <div class="choiceBtns">
+   <button id="makeFlare" class="primary">F now <span class="muted">(no turn cost)</span></button>
+   <button id="makeCharge" class="primary">C0 build <span class="muted">(no turn cost)</span></button>
+   <button id="cancelChoice">R</button>
+  </div>
+ </div>
+
+
+ <div class="watcherWrap">
+  <div>
+   <button id="watcherBtn" class="watcher" aria-label="observe"></button>
+   <div class="watcherLabel">observe</div>
+  </div>
+ </div>
+
+ <div class="footerKey" style="
+  display:flex;
+  flex-direction:column; max-width:100%;
+  justify-content:center;
+  align-items:center;
+  gap:4px;
+  flex-wrap:wrap;
+  font-size:11px;
+ ">
+  <div style="display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;">
+    <span class="eco" style="flex-shrink:0;">eco: R | C0-C1-C2 | F-f</span>
+  </div>
+  <div style="display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;">
+    <span class="arb" style="flex-shrink:0;">arbiter: A</span>
+    <span style="opacity:.35;">·</span>
+    <span class="lat" style="flex-shrink:0;">latcher: L</span>
+    <span style="opacity:.35;">·</span>
+    <span class="exe" style="flex-shrink:0;">executor: E</span>
+  </div>
+ </div>
+
+  <div id="log" class="log"></div>
+</div>
+
+<div id="help" class="help">
+  <div class="helpBox">
+    <div class="buttons" style="float:right"><button id="closeHelp">close</button></div>
+    <h1>inducta</h1>
+<h2>rules</h2>
+
+<h3>economy</h3>
+<ul>
+<li><span class="eco">R</span> becomes <span class="eco">F</span> or <span class="eco">C0</span> instantly</li>
+<li><span class="eco">C0→C1→C2</span> grows over time</li>
+<li><span class="eco">F→f→gone</span> fades over time</li>
+</ul>
+
+<h3>power</h3>
+<ul>
+<li><span class="eco">C1</span>, <span class="eco">f</span> = normal</li>
+<li><span class="eco">C2</span>, <span class="eco">F</span> = strong</li>
+<li>normal = 1 damage</li>
+<li>strong = 2 damage</li>
+</ul>
+
+<h3>combatants</h3>
+<ul>
+<li><span class="arb">A</span> fires in a direction</li>
+<li><span class="lat">L</span> attacks over time</li>
+<li><span class="exe">E</span> crushes eco</li>
+<li><span class="arb">+</span> = elite</li>
+<li><span class="arb">++</span> = boss</li>
+<li><span class="arb">*</span> = next shift</li>
+<li><span class="arb">**</span> = two shifts</li>
+</ul>
+
+<h3>pressure</h3>
+<ul>
+<li>projectiles weaken charge: <span class="eco">C2→C1→C0→gone</span></li>
+<li><span class="exe">E+</span> needs 2 damage to breach</li>
+<li><span class="exe">E++</span> needs 3 damage to breach</li>
+</ul>
+
+<h3>flow</h3>
+<ul>
+<li>build power → spend power → world shifts</li>
+<li>observe advances time</li>
+<li>collapse rewinds recent states</li>
+</ul>
+
+<h3>collapse</h3>
+<p>full board + incoming pressure = collapse</p>
+
+
+  </div>
+</div>
+
+<script>
+const NUMS = ["7","8","9","4","5","6","1","2","3"];
+const NUM_TO_POS = {"7":[0,0],"8":[0,1],"9":[0,2],"4":[1,0],"5":[1,1],"6":[1,2],"1":[2,0],"2":[2,1],"3":[2,2]};
+const POS_TO_NUM = {"0,0":"7","0,1":"8","0,2":"9","1,0":"4","1,1":"5","1,2":"6","2,0":"1","2,1":"2","2,2":"3"};
+const ROWS = [["7","8","9"],["4","5","6"],["1","2","3"]];
+const SPAWN_KIND_ORDER = ["latcher","arbiter","executor"];
+const DIRS = [[-1,0],[0,1],[1,0],[0,-1]];
+const DIR_GLYPHS = ["^",">","v","<"];
+const ECO_KINDS = new Set(["root","charge","charge_dead","flare"]);
+const COMBATANT_KINDS = new Set(["arbiter","latcher","executor","executor_breached"]);
+
+function mulberry32(seed){
+ let t = seed >>> 0;
+ return function(){
+  t += 0x6D2B79F5;
+  let r = Math.imul(t ^ (t >>> 15), 1 | t);
+  r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+  return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+ }
+}
+function chanceFor(seed, t){
+ let x = (seed + t * 7919) >>> 0;
+ return mulberry32(x)();
+}
+function shuffle(arr, rng){
+ for(let i=arr.length-1;i>0;i--){
+  const j = Math.floor(rng()*(i+1));
+  [arr[i],arr[j]]=[arr[j],arr[i]];
+ }
+}
+
+function cell(kind="empty", value=0, hold=0, direction=1, target="", timer=0, tier=0, phase=0){
+ return {kind,value,hold,direction,target,timer,tier,phase};
+}
+function cloneCell(c){ return cell(c.kind,c.value,c.hold,c.direction,c.target,c.timer,c.tier||0,c.phase||0); }
+
+let game;
+
+function newGame(message="plane is empty."){
+ const runSeed = Math.floor(Math.random()*1000000000);
+ game = {
+  board: {},
+  turn: 1,
+  last: message,
+  spawnIndex: 0,
+  spawnBag: [],
+  plannedSpawn: null,
+  plannedSpawns: [],
+  spawnHistory: [],
+  runSeed,
+  rng: mulberry32(runSeed),
+  pressureSeed: runSeed,
+  spawningEnabled: true,
+  clearedCount: 0,
+  collapsed: false,
+  reviewing: false,
+  collapseReason: "",
+  collapseGrace: false,
+  history: [],
+  redoStack: [],
+  strongFlags: {
+   charge_decayed:0, dead_charge_cleared:0, flare_expired:0,
+   latcher_regressed:0, eco_destroyed:0, wasted_touch:0, cancelled_power:0
+  },
+  mode: "normal",
+  selected: ""
+ };
+ for(const n of NUMS) game.board[n]=cell();
+ render();
+}
+
+function getCell(n){ return game.board[n]; }
+function setCell(n,c){ game.board[n]=c; }
+
+function cloneGameState(){
+ const board = {};
+ for(const n of NUMS) board[n] = cloneCell(game.board[n]);
+ return {
+  board,
+  turn: game.turn,
+  last: game.last,
+  spawnIndex: game.spawnIndex,
+  spawnBag: [...game.spawnBag],
+  plannedSpawn: game.plannedSpawn ? {...game.plannedSpawn} : null,
+  plannedSpawns: game.plannedSpawns ? game.plannedSpawns.map(s => ({...s})) : [],
+  spawnHistory: game.spawnHistory.map(s => ({...s})),
+  rng: game.rng,
+  pressureSeed: game.pressureSeed,
+  spawningEnabled: game.spawningEnabled,
+  clearedCount: game.clearedCount,
+  collapsed: game.collapsed,
+  reviewing: game.reviewing,
+  collapseReason: game.collapseReason,
+  collapseGrace: game.collapseGrace,
+  strongFlags: {...game.strongFlags},
+  mode: game.mode,
+  selected: game.selected,
+  targetPower: game.targetPower
+ };
+}
+function pushUndo(){
+ game.history.push(cloneGameState());
+ if(game.history.length>50) game.history.shift();
+ game.redoStack = [];
+}
+function restoreGameState(state){
+ game.board = {};
+ for(const n of NUMS) game.board[n] = cloneCell(state.board[n]);
+ game.turn = state.turn;
+ game.last = "Rolled back one action.";
+ game.spawnIndex = state.spawnIndex;
+ game.spawnBag = [...state.spawnBag];
+ game.plannedSpawn = state.plannedSpawn ? {...state.plannedSpawn} : null;
+ game.plannedSpawns = state.plannedSpawns ? state.plannedSpawns.map(s => ({...s})) : [];
+ game.spawnHistory = state.spawnHistory ? state.spawnHistory.map(s => ({...s})) : [];
+ game.rng = state.rng;
+ game.pressureSeed = state.pressureSeed;
+ game.spawningEnabled = state.spawningEnabled;
+ game.clearedCount = state.clearedCount;
+ game.collapsed = state.collapsed;
+ game.reviewing = state.reviewing || false;
+ game.collapseReason = state.collapseReason;
+ game.collapseGrace = state.collapseGrace || false;
+ game.strongFlags = {...state.strongFlags};
+ game.mode = state.mode;
+ game.selected = state.selected;
+ game.targetPower = state.targetPower;
+}
+function undoOneAction(){
+ if(!game.history.length){
+  game.last = "Nothing to undo.";
+  render();
+  return;
+ }
+ game.redoStack.push(cloneGameState());
+ if(game.redoStack.length>50) game.redoStack.shift();
+ const state = game.history.pop();
+ restoreGameState(state);
+ game.mode = "normal";
+ game.selected = "";
+ game.targetPower = undefined;
+ render();
+}
+function redoOneAction(){
+ if(!game.redoStack.length){
+  game.last = "Nothing to redo.";
+  render();
+  return;
+ }
+ game.history.push(cloneGameState());
+ if(game.history.length>50) game.history.shift();
+ const state = game.redoStack.pop();
+ restoreGameState(state);
+ game.mode = "normal";
+ game.selected = "";
+ game.targetPower = undefined;
+ render();
+}
+function emptyTiles(){ return NUMS.filter(n=>getCell(n).kind==="empty"); }
+function ecoTiles(){ return NUMS.filter(n=>ECO_KINDS.has(getCell(n).kind)); }
+function powerTiles(){ return NUMS.filter(n=>getCell(n).kind==="flare" || (getCell(n).kind==="charge" && [1,2].includes(getCell(n).value))); }
+
+function powerSummary(){
+ const parts = [];
+ for(const n of NUMS){
+  const c = getCell(n);
+  if(c.kind==="flare") parts.push(`<span class="eco">${n}:F now</span>`);
+  else if(c.kind==="charge" && c.value===2) parts.push(`<span class="eco">${n}:C2 now</span>`);
+  else if(c.kind==="charge" && c.value===1) parts.push(`<span class="eco">${n}:C1 now</span>`);
+  else if(c.kind==="charge" && c.value===0) parts.push(`<span class="eco">${n}:C0 building</span>`);
+ }
+ return parts.length ? parts.join(" | ") : `<span class="muted">none</span>`;
+}
+function powerSummaryPlain(n){
+ const c = getCell(n);
+ if(c.kind==="flare") return `${n}:F now`;
+ if(c.kind==="charge" && c.value===2) return `${n}:C2 now`;
+ if(c.kind==="charge" && c.value===1) return `${n}:C1 now`;
+ if(c.kind==="charge" && c.value===0) return `${n}:C0 building`;
+ return n;
+}
+function powerHint(){
+ const p = powerTiles();
+ if(!p.length) return "";
+ return " Use " + p.map(powerSummaryPlain).join(" or ") + ".";
+}
+function strongSummary(){
+ const f = game.strongFlags;
+ const parts = [];
+ if(f.charge_decayed) parts.push(`charge decay x${f.charge_decayed}`);
+ if(f.dead_charge_cleared) parts.push(`C0 clear x${f.dead_charge_cleared}`);
+ if(f.flare_expired) parts.push(`flare expired x${f.flare_expired}`);
+ if(f.latcher_regressed) parts.push(`latcher regress x${f.latcher_regressed}`);
+ if(f.eco_destroyed) parts.push(`eco lost x${f.eco_destroyed}`);
+ if(f.wasted_touch) parts.push(`wasted touch x${f.wasted_touch}`);
+ if(f.cancelled_power) parts.push(`cancelled power x${f.cancelled_power}`);
+ return parts.length ? `<span class="warn">${parts.join(", ")}</span>` : `<span class="good">strong</span>`;
+}
+
+function isThreatened(n){
+ const c = getCell(n);
+ if(!ECO_KINDS.has(c.kind)) return false;
+ for(const other of NUMS){
+  const o = getCell(other);
+  if(["latcher","executor","executor_breached"].includes(o.kind) && o.target===n) return true;
+ }
+ return false;
+}
+function tokenFor(n){
+ const c = getCell(n);
+ if(c.kind==="empty") return "";
+ if(c.kind==="root") return "R";
+ if(c.kind==="charge") return `C${c.value}`;
+ if(c.kind==="charge_dead") return "C0";
+ if(c.kind==="flare") return c.value===2 ? "F" : "f";
+ if(c.kind==="arbiter"){
+  const isBoss = c.tier===2;
+  const isContainedBoss = isBoss && c.phase===2;
+  const arrows = isContainedBoss ? "" : (c.value===1 ? arbiterDirections(n,c).map(d=>DIR_GLYPHS[d]).join("") : "");
+  const suffix = isBoss ? "++" : "";
+  const letter = isContainedBoss ? "a" : "A";
+  if(isContainedBoss) return `${letter}0${suffix}`;
+  if(c.value===1) return `${letter}*${suffix}${arrows}`;
+  return `${letter}${suffix}`;
+ }
+ if(c.kind==="latcher"){
+  let ranged = "";
+  if(c.target){
+   ranged = c.timer>0 ? `**${DIR_GLYPHS[c.direction]}` : `*${DIR_GLYPHS[c.direction]}`;
+  }
+  return c.value===0 ? `L${ranged}` : `L${c.value}${ranged}`;
+ }
+ if(c.kind==="executor"){
+  const suffix = c.tier===2 ? "++" : (c.tier===1 ? "+" : "");
+  const arrows = c.direction!==undefined ? DIR_GLYPHS[c.direction] : "";
+  const armed = c.target ? "*" : "";
+  return `E${armed}${suffix}${arrows}`;
+ }
+ if(c.kind==="executor_breached"){
+  const suffix = c.tier===2 ? "++" : (c.tier===1 ? "+" : "");
+  const arrows = c.direction!==undefined ? DIR_GLYPHS[c.direction] : "";
+  const armed = c.target ? (c.timer>0 ? "**" : "*") : "";
+  const remaining = c.value || 0;
+  const count = remaining>0 ? `${remaining}` : "";
+  return `e${count}${armed}${suffix}${arrows}`;
+ }
+ return "?";
+}
+function classForKind(kind){
+ if(["root","charge","charge_dead","flare"].includes(kind)) return "eco";
+ if(kind==="arbiter") return "arb";
+ if(kind==="latcher") return "lat";
+ if(["executor","executor_breached"].includes(kind)) return "exe";
+ return "";
+}
+
+function maxLatcherVitality(tier){
+ if(tier===2) return 4;
+ if(tier===1) return 3;
+ return 2;
+}
+
+
+function firstWorldMessage(messages){
+ if(!messages || !messages.length) return "";
+ return messages[0];
+}
+function joinFirst(base, messages){
+ const first = firstWorldMessage(messages);
+ return first ? `${base} · ${first}` : base;
+}
+
+
+function edgeEmptyTiles(){
+ return emptyTiles().filter(n=>{
+  const [r,c] = NUM_TO_POS[n];
+  return r===0 || r===2 || c===0 || c===2;
+ });
+}
+
+function plannedPreviewLineForTile(tileN){
+ const [r,c] = NUM_TO_POS[tileN];
+ if(c===0) return {tiles:["7","4","1"], dir:"preview-left"};
+ if(c===2) return {tiles:["9","6","3"], dir:"preview-right"};
+ if(r===0) return {tiles:["7","8","9"], dir:"preview-top"};
+ if(r===2) return {tiles:["1","2","3"], dir:"preview-bottom"};
+ return {tiles:[], dir:""};
+}
+
+const INGRESS_LANES = [
+ {name:"north", primary:["7","8","9"], fallback:["4","5","6"], previewDir:"preview-top"},
+ {name:"east", primary:["9","6","3"], fallback:["8","5","2"], previewDir:"preview-right"},
+ {name:"south", primary:["1","2","3"], fallback:["4","5","6"], previewDir:"preview-bottom"},
+ {name:"west", primary:["7","4","1"], fallback:["8","5","2"], previewDir:"preview-left"}
+];
+
+function openTilesInLane(tiles, reserved=null){
+ return tiles.filter(n=>getCell(n).kind==="empty" && (!reserved || !reserved.has(n)));
+}
+
+function laneChoiceForIngress(ingressIndex, reserved=null){
+ const ingress = INGRESS_LANES[ingressIndex];
+ const primary = openTilesInLane(ingress.primary, reserved);
+ if(primary.length){
+  return {ingressIndex, ingress, candidates:primary, previewTiles:ingress.primary, previewDir:ingress.previewDir, lane:"primary"};
+ }
+ const fallback = openTilesInLane(ingress.fallback, reserved);
+ if(fallback.length){
+  return {ingressIndex, ingress, candidates:fallback, previewTiles:ingress.primary, previewDir:ingress.previewDir, lane:"fallback"};
+ }
+ return null;
+}
+
+function deterministicRngFor(slot, salt){
+ const seed = (game.pressureSeed + game.turn * 4099 + slot * 9176 + salt) >>> 0;
+ return mulberry32(seed);
+}
+
+function deterministicIngressOrder(slot){
+ const order = [0,1,2,3];
+ shuffle(order, deterministicRngFor(slot, 12345));
+ return order;
+}
+
+function chooseIngressLane(reserved=null, slot=0){
+ const order = deterministicIngressOrder(slot);
+ for(const ingressIndex of order){
+  const choice = laneChoiceForIngress(ingressIndex, reserved);
+  if(choice) return choice;
+ }
+ return null;
+}
+
+function chooseTileFromCandidates(candidates, slot=0, salt=22222){
+ if(!candidates.length) return "";
+ const roll = chanceFor(game.pressureSeed + salt + slot * 1009, game.turn);
+ return candidates[Math.floor(roll * candidates.length)];
+}
+
+function plannedSpawnKindForSlot(slot){
+ const bag = [...SPAWN_KIND_ORDER];
+ shuffle(bag, deterministicRngFor(Math.floor(slot / bag.length), 33333));
+ return bag[slot % bag.length];
+}
+
+function plannedDirectionForSlot(slot){
+ return Math.floor(chanceFor(game.pressureSeed + 44444 + slot * 37, game.turn) * 4);
+}
+
+function ensurePlannedSpawns(){
+ if(game.plannedSpawns && game.plannedSpawns.length && game.plannedSpawns[0].turn===game.turn){
+  return game.plannedSpawns;
+ }
+
+ game.plannedSpawn = null;
+ game.plannedSpawns = [];
+
+ if(!game.spawningEnabled) return [];
+ const spawnCount = spawnCountForTurn(game.turn);
+ if(spawnCount<=0) return [];
+
+ const reserved = new Set();
+
+ for(let i=0;i<spawnCount;i++){
+  const laneChoice = chooseIngressLane(reserved, i);
+  if(!laneChoice) break;
+
+  const spawnKind = plannedSpawnKindForSlot(i);
+  const spawnTile = chooseTileFromCandidates(laneChoice.candidates, i, 22222);
+  reserved.add(spawnTile);
+
+  const tier = rollTier(game.turn);
+  const direction = plannedDirectionForSlot(i);
+
+  game.plannedSpawns.push({
+   turn: game.turn,
+   kind: spawnKind,
+   tile: spawnTile,
+   tier: tier,
+   direction: direction,
+   ingressIndex: laneChoice.ingressIndex,
+   ingressName: laneChoice.ingress.name,
+   ingressLane: laneChoice.lane,
+   previewTiles: laneChoice.previewTiles,
+   previewDir: laneChoice.previewDir
+  });
+ }
+
+ game.plannedSpawn = game.plannedSpawns.length ? game.plannedSpawns[0] : null;
+ return game.plannedSpawns;
+}
+
+function ensurePlannedSpawn(){
+ const plans = ensurePlannedSpawns();
+ return plans.length ? plans[0] : null;
+}
+
+function pressurePreview(){
+ const plans = ensurePlannedSpawns();
+ if(!plans.length) return {};
+ const out = {};
+ for(const plan of plans){
+  for(const n of plan.previewTiles){
+   const existing = out[n];
+   out[n] = {
+    kind: existing && existing.kind!==plan.kind ? "mixed" : plan.kind,
+    dir: plan.previewDir,
+    count: existing ? existing.count + 1 : 1
+   };
+  }
+ }
+ return out;
+}
+
+function incomingSpawnCanCollapse(){
+ const incoming = spawnCountForTurn(game.turn);
+ if(incoming <= 0) return false;
+ if(emptyTiles().length > incoming) return false;
+ if(!ecoTiles().length) return true;
+ return game.spawningEnabled && spawnCountForTurn(game.turn + 1) > 0;
+}
+
+
+function dangerStateFromEmptyCount(emptyCount, spawnCountNow, spawnCountNext){
+ const afterSpawn = Math.max(0, emptyCount - spawnCountNow);
+
+ // Red: current visible pressure can collapse the board.
+ if(afterSpawn <= 0 && spawnCountNext > 0) return "danger";
+
+ return "";
+}
+
+function boardDangerState(){
+ const currentSpawn = spawnCountForTurn(game.turn);
+ const nextSpawn = spawnCountForTurn(game.turn + 1);
+ const emptyCount = emptyTiles().length;
+
+ // Red: the board is in collapse grace, or raw spawn math says the next shift can kill.
+ if(game.collapseGrace) return "danger";
+
+ const currentState = dangerStateFromEmptyCount(emptyCount, currentSpawn, nextSpawn);
+ if(currentState==="danger") return "danger";
+
+ // Red-only pressure read. This preserves collapse danger without a vague warning layer.
+ let pressure = 0;
+
+ for(const n of NUMS){
+  const c = getCell(n);
+
+  if(c.kind==="arbiter" && c.value===1){
+   for(const d of arbiterDirections(n,c)){
+    const hit = firstArbiterHitInDirection(n,d);
+    if(hit && hit.kind==="eco") pressure += 1.25;
+   }
+  }
+
+  if(c.kind==="latcher" && c.target){
+   pressure += c.timer>0 ? 0.75 : 1.5;
+  }
+
+  if(c.kind==="executor" || c.kind==="executor_breached"){
+   if(c.target){
+    pressure += (c.kind==="executor_breached" && c.timer>0) ? 1.25 : 2.0;
+   } else {
+    const front = forwardTile(n,c.direction);
+    if(front && ECO_KINDS.has(getCell(front).kind)){
+     pressure += 1.5; // about to load
+    } else if(front && getCell(front).kind==="empty"){
+     pressure += 0.5; // lane pressure / space claim
+    }
+   }
+  }
+ }
+
+ const afterSpawn = Math.max(0, emptyCount - currentSpawn);
+ const effectiveSpace = afterSpawn - pressure;
+
+ if(effectiveSpace <= 0 && emptyCount <= 2) return "danger";
+
+ return "";
+}
+
+function render(){
+
+ if(game.collapsed){
+  document.body.classList.add("collapse-state");
+ }else{
+  document.body.classList.remove("collapse-state");
+ }
+
+ const preview = pressurePreview();
+ const status = document.getElementById("status");
+ status.innerHTML = `
+  <div class="row">
+   <div>turn <b>${game.turn}</b> · cleared <b>${game.clearedCount}</b></div>
+   <div class="muted">seed ${game.runSeed}</div>
+  </div>
+  
+  
+  ${game.collapsed ? `<div class="warn">${game.collapseReason}</div>` : ""}
+  ${game.collapseGrace && !game.collapsed ? `<div class="warn">collapse warning · make space now</div>` : ""}
+ `;
+
+ const board = document.getElementById("board");
+ const boardWrap = document.getElementById("app");
+ boardWrap.classList.remove("boardDanger");
+ const dangerState = boardDangerState();
+ if(dangerState==="danger") boardWrap.classList.add("boardDanger");
+
+ board.innerHTML = "";
+ for(const n of NUMS){
+  const c = getCell(n);
+  const div = document.createElement("div");
+  div.className = `tile ${c.kind==="empty"?"empty":""} ${classForKind(c.kind)}`;
+  if(game.selected===n) div.classList.add("selected");
+  if(preview[n]){
+   div.classList.add("hasPreview");
+   div.classList.add(`preview-${preview[n].kind}`);
+   div.classList.add(preview[n].dir);
+   if(incomingSpawnCanCollapse()){
+    div.classList.add("previewDanger");
+   }
+  }
+  if(game.mode==="targeting"){
+   if(n!==game.selected){
+    const actionMap = poweredTargetActions(game.selected, game.targetPower);
+    if(actionMap[n]){
+     div.classList.add("targetable");
+    } else {
+     div.classList.add("badtarget");
+    }
+   }
+  }
+  div.dataset.n = n;
+  if(game.mode==="rootChoice" && game.selected===n){
+   div.classList.add("rootChoosing");
+   div.innerHTML = `
+    <div class="rootOptions">
+     <button class="rootFlare" data-n="${n}">F</button>
+     <button class="rootCharge" data-n="${n}">C</button>
+     <button class="rootCancel cancel" data-n="${n}">R</button>
+    </div>`;
+  } else {
+   const token = tokenFor(n);
+   let tokenClass = "";
+   if(c.kind==="charge") tokenClass = "chargeToken";
+   if(c.kind==="flare") tokenClass = "flareToken";
+   div.innerHTML = `<span class="${tokenClass}">${token}</span>`;
+  }
+  div.addEventListener("click",(e)=>{
+   if(e.target.closest(".rootFlare")){
+    convertRootChoice(n, "flare");
+    e.stopPropagation();
+    return;
+   }
+   if(e.target.closest(".rootCharge")){
+    convertRootChoice(n, "charge");
+    e.stopPropagation();
+    return;
+   }
+   if(e.target.closest(".rootCancel")){
+    game.mode="normal"; game.selected="";
+    game.last=`<span class="releaseText">root released.</span>`;
+    render();
+    e.stopPropagation();
+    return;
+   }
+   tapTile(n);
+  });
+  board.appendChild(div);
+ }
+
+ const log = document.getElementById("log");
+ log.innerHTML = game.last || `<span class="muted">plane is empty</span>`;
+
+ const choicePanel = document.getElementById("choicePanel");
+ if(game.mode==="rootChoice"){
+  choicePanel.classList.add("visible");
+  document.getElementById("choiceTitle").innerHTML = `Root at ${game.selected}: choose F or C0 <span class="good">(free — no time passes)</span>`;
+ } else {
+  choicePanel.classList.remove("visible");
+ }
+ updateWatcherPulse();
+}
+
+function validActionsFor(n){
+ const c = getCell(n);
+ if(c.kind==="empty") return [["root","Empty -> Root"]];
+ if(c.kind==="root") return [["flare","Ledger -> Flare"],["charge","Vortex -> Charge (C0 build)"]];
+ if(c.kind==="charge"){
+  if(c.value===2) return [["use_strong","Use C2 as STRONG power"]];
+  if(c.value===1) return [["use_normal_charge","Use C1 as NORMAL power"]];
+  if(c.value===0) return [["charge_building","C0 is building"]];
+ }
+ if(c.kind==="charge_dead") return [["clear_dead_charge","Clear C0"]];
+ if(c.kind==="flare") return [["use_flare","Use Flare (F = strong, f = normal)"]];
+ if(COMBATANT_KINDS.has(c.kind)) return [["needs_power","Needs C2/C1/F power first"]];
+ return [];
+}
+
+function oppositeDirection(direction){
+ return (direction + 2) % 4;
+}
+
+function arbiterDirections(n,c){
+ if(c.kind!=="arbiter") return [];
+ if(c.tier>=1) return [c.direction, oppositeDirection(c.direction)];
+ return [c.direction];
+}
+
+function poweredTargetActions(sourceN,power){
+ const options = {};
+ for(const n of NUMS){
+  if(n===sourceN) continue;
+  const c = getCell(n);
+  if(c.kind==="arbiter" && (c.value===1 || (c.tier===2 && c.phase===2))){
+   options[n] = "resolve_arbiter";
+  } else if(c.kind==="latcher"){
+   options[n] = "progress_latcher";
+  } else if(c.kind==="executor"){
+   options[n] = power>=2 ? "resolve_executor_from_closed" : "breach_executor";
+  } else if(c.kind==="executor_breached"){
+   options[n] = "resolve_executor";
+  }
+ }
+ return options;
+}
+
+function hasAnyBoardAction(){
+ if(emptyTiles().length>0) return true;
+ for(const n of NUMS){
+  const c = getCell(n);
+  if(c.kind==="root") return true;
+  if(c.kind==="charge_dead") return true;
+  if(c.kind==="flare" || (c.kind==="charge" && [1,2].includes(c.value))){
+   const power = c.kind==="flare" ? c.value : 2;
+   if(Object.keys(poweredTargetActions(n, power)).length>0) return true;
+  }
+ }
+ return false;
+}
+
+function updateWatcherPulse(){
+ const watcher = document.getElementById("watcherBtn");
+ if(!watcher) return;
+ if(!hasAnyBoardAction() && !game.collapsed){
+  watcher.classList.add("pulse");
+ } else {
+  watcher.classList.remove("pulse");
+ }
+}
+
+function passTime(){
+ if(game.collapsed){
+  rewindCollapseWithWatcher();
+  return;
+ }
+ pushUndo();
+ game.mode = "normal";
+ game.selected = "";
+ const msgs = resolveWorld("", "watcher", "");
+ game.last = joinFirst("time passes", msgs);
+ game.turn++;
+ render();
+}
+
+function rewindCollapseWithWatcher(){
+ if(!game.history.length){
+  game.last = "No earlier state remains.";
+  render();
+  return;
+ }
+ const state = game.history.pop();
+ restoreGameState(state);
+ game.collapsed = true;
+ game.reviewing = true;
+ game.collapseReason = "watcher review";
+ game.mode = "normal";
+ game.selected = "";
+ game.last = "watcher rewinds";
+ render();
+}
+
+function tapTile(n){
+ if(game.collapsed){
+  game.last = game.reviewing ? "Watcher can rewind the collapse." : "The board is past control. Restart when ready.";
+  render();
+  return;
+ }
+
+ if(game.mode==="rootChoice"){
+  if(n!==game.selected){
+   game.mode="normal"; game.selected="";
+   game.last=`<span class="releaseText">root released.</span>`;
+   render();
+   return;
+  }
+  return;
+ }
+
+ if(game.mode==="targeting"){
+  const source = game.selected;
+  const power = game.targetPower;
+  if(n===source){
+   game.mode="normal";
+   game.selected="";
+   game.last = `<span class="releaseText">${source}: ${tokenFor(source)} released — no turn spent.</span>`;
+   render();
+   return;
+  }
+  const actionMap = poweredTargetActions(source,power);
+  const action = actionMap[n];
+  if(!action){
+   game.mode="normal";
+   game.selected="";
+   game.last = `${source}: ${tokenFor(source)} selected. no effect`;
+   render();
+   return;
+  }
+  consumePowerTileAndApply(source, action, n, power);
+  game.mode="normal"; game.selected="";
+  render();
+  return;
+ }
+
+ const actions = validActionsFor(n);
+ if(!actions.length){ game.strongFlags.wasted_touch++; game.last="No valid action."; render(); return; }
+
+ const action = actions[0][0];
+ if(action==="root"){
+  pushUndo();
+  setCell(n, cell("root"));
+  const msgs = resolveWorld(n, "root", n);
+  game.last = joinFirst(`${n}: Empty -> Root`, msgs);
+  game.turn++;
+  render();
+  return;
+ }
+ if(action==="flare" || action==="charge"){
+  game.mode="rootChoice"; game.selected=n; game.last=`${n}: Root selected. Choose F or C0 — free, no time passes.`;
+  render();
+  return;
+ }
+ if(action==="use_strong"){
+  game.mode="targeting"; game.selected=n; game.targetPower=2; game.last=`${n}: ${tokenFor(n)} selected. Tap target.`;
+  render();
+  return;
+ }
+ if(action==="use_normal_charge"){
+  game.mode="targeting"; game.selected=n; game.targetPower=1; game.last=`${n}: ${tokenFor(n)} selected. Tap target.`;
+  render();
+  return;
+ }
+ if(action==="charge_building"){
+  game.last=`${n}: C0 is building. No power yet.`;
+  render();
+  return;
+ }
+ if(action==="use_normal" || action==="use_flare"){
+  game.mode="targeting";
+  game.selected=n;
+  game.targetPower=action==="use_flare" ? Math.max(1, getCell(n).value) : 1;
+  game.last=`${n}: ${action==="use_flare"?tokenFor(n):"C1"} selected. Tap target.`;
+  render();
+  return;
+ }
+ if(action==="clear_dead_charge"){
+  pushUndo();
+  game.strongFlags.dead_charge_cleared++;
+  setCell(n, cell());
+  const msgs = resolveWorld(n, "clear_dead_charge", n);
+  game.last = joinFirst(`${n}: C0 cleared`, msgs);
+  game.turn++;
+  render();
+  return;
+ }
+ if(action==="needs_power"){
+  game.last = `${n}: Needs C2/C1/F power first.` + powerHint() + ` No turn spent.`;
+  render();
+  return;
+ }
+}
+
+
+function convertRootChoice(n, choice){
+ if(game.mode!=="rootChoice" || game.selected!==n) return;
+ pushUndo();
+ if(choice==="flare"){
+  setCell(n, cell("flare",2));
+  game.last = `${n}: Root + Ledger -> Flare. Power now: ${n}:F now`;
+ } else if(choice==="charge"){
+  setCell(n, cell("charge",0));
+  game.last = `${n}: Root + Vortex -> Charge C0. Builds over time.`;
+ }
+ game.mode="normal";
+ game.selected="";
+ render();
+}
+
+document.getElementById("makeFlare").onclick = () => { convertRootChoice(game.selected, "flare"); };
+document.getElementById("makeCharge").onclick = () => { convertRootChoice(game.selected, "charge"); };
+document.getElementById("cancelChoice").onclick = () => {
+ game.mode="normal"; game.selected="";
+ game.last=`<span class="releaseText">root released.</span>`;
+ render();
+};
+
+function applyPoweredAction(targetN, action, power){
+ const c = getCell(targetN);
+ if(action==="resolve_arbiter"){
+  if(c.kind==="arbiter" && c.tier===2 && c.phase===2){
+   game.clearedCount++;
+   setCell(targetN,cell());
+   return `${targetN}: a0++ resolved`;
+  }
+  if(c.kind==="arbiter" && c.value===1){
+   if(c.tier===2 && c.phase!==2){
+    if(power>=2){
+     game.clearedCount++;
+     setCell(targetN,cell());
+     return `${targetN}: A*++ resolved`;
+    }
+    setCell(targetN, cell("arbiter",0,0,c.direction,"",0,c.tier,2));
+    return `${targetN}: A*++ -> a0++`;
+   }
+   game.clearedCount++;
+   setCell(targetN,cell());
+   return `${targetN}: A* resolved`;
+  }
+  game.strongFlags.wasted_touch++; return `${targetN}: Arbiter timing failed`;
+ }
+ if(action==="bad_arbiter"){ game.strongFlags.wasted_touch++; return `${targetN}: A inactive; timing was poor`; }
+ if(action==="progress_latcher"){
+  if(c.kind!=="latcher"){ game.strongFlags.wasted_touch++; return `${targetN}: no Latcher result`; }
+  const damage = power>=2 ? 2 : 1;
+  const nextValue = c.value - damage;
+  if(nextValue <= 0){ game.clearedCount++; setCell(targetN,cell()); return `${targetN}: Latcher completed`; }
+  setCell(targetN, cell("latcher", nextValue, 1, c.direction, c.target, c.timer, c.tier||0, c.phase||0));
+  return `${targetN}: Latcher damaged to L${nextValue}`;
+ }
+ if(action==="breach_executor"){
+  const tier = c.tier || 0;
+  const required = tier===2 ? 3 : (tier===1 ? 2 : 1);
+  const damage = power>=2 ? 2 : 1;
+  const remaining = Math.max(0, required - damage);
+  setCell(targetN, cell("executor_breached",remaining,0,c.direction,c.target,c.target ? 1 : 0,tier,0));
+  return `${targetN}: Executor breached E -> ${remaining>0 ? `e${remaining}` : "e"}`;
+ }
+ if(action==="resolve_executor_from_closed"){
+  const tier = c.tier || 0;
+  const required = tier===2 ? 3 : (tier===1 ? 2 : 1);
+  const damage = power>=2 ? 2 : 1;
+  const remaining = Math.max(0, required - damage);
+  if(tier===0 && damage>=2){
+    game.clearedCount++;
+    setCell(targetN, cell());
+    return `${targetN}: Executor resolved`;
+  }
+  setCell(targetN, cell("executor_breached",remaining,0,c.direction,c.target,c.target ? 1 : 0,tier,0));
+  return `${targetN}: Executor breached E -> ${remaining>0 ? `e${remaining}` : "e"}`;
+ }
+ if(action==="resolve_executor"){
+  const damage = power>=2 ? 2 : 1;
+  const remaining = Math.max(0, (c.value||0) - damage);
+  if(remaining<=0){
+   game.clearedCount++;
+   setCell(targetN,cell());
+   return `${targetN}: Executor resolved`;
+  }
+  setCell(targetN, cell("executor_breached",remaining,0,c.direction,c.target,c.timer,c.tier||0,0));
+  return `${targetN}: Executor damaged to e${remaining}`;
+ }
+ if(action==="miss_power"){ game.strongFlags.wasted_touch++; return `${targetN}: power found no result`; }
+ game.strongFlags.wasted_touch++; return "Unknown powered action";
+}
+function consumePowerTileAndApply(sourceN, action, targetN, power){
+ pushUndo();
+ const sourceCell = cloneCell(getCell(sourceN));
+ if(sourceCell.kind==="charge" && sourceCell.value===2){
+  setCell(sourceN, cell("charge",1));
+ } else {
+  setCell(sourceN, cell());
+ }
+ let message = applyPoweredAction(targetN, action, power);
+ const msgs = resolveWorld(sourceN, action, targetN);
+ let sourceLabel = sourceCell.kind==="charge" ? `C${sourceCell.value}` : tokenForSource(sourceCell);
+ game.last = joinFirst(`${sourceN}: ${sourceLabel} used -> ${message}`, msgs);
+ game.turn++;
+}
+
+function tokenForSource(c){
+ if(c.kind==="flare") return c.value===2 ? "F" : "f";
+ if(c.kind==="charge") return `C${c.value}`;
+ return "?";
+}
+
+function resolveWorld(sourceN, action, targetN){
+ let messages = [];
+ messages.push(...resolveEcoDecay(sourceN, action));
+ messages.push(...resolveLatcherRegression(action, targetN));
+ messages.push(...resolveArbiterPressure());
+ messages.push(...resolveLatcherPressure());
+ messages.push(...resolveExecutorPressure());
+ const spawn = maybeSpawnCombatant();
+ if(spawn) messages.push(spawn);
+ const collapse = collapseIfNeeded();
+ if(collapse) messages.push(collapse);
+ return messages;
+}
+function resolveEcoDecay(sourceN, action){
+ const messages = [];
+ for(const n of NUMS){
+  if(n===sourceN) continue;
+  const c = getCell(n);
+  if(c.kind==="charge"){
+   if(c.value===0){ setCell(n, cell("charge",1)); game.strongFlags.charge_decayed++; messages.push(`${n}: C0 built to C1`); }
+   else if(c.value===1){ setCell(n, cell("charge",2)); game.strongFlags.charge_decayed++; messages.push(`${n}: C1 built to C2`); }
+  }
+ }
+ for(const n of NUMS){
+  if(n===sourceN && action==="flare") continue;
+  const c = getCell(n);
+  if(c.kind==="flare"){
+    if(c.value===2){
+     c.value = 1;
+    } else {
+     setCell(n,cell());
+     game.strongFlags.flare_expired++;
+     messages.push(`${n}: flare expired`);
+    }
+   }
+ }
+ return messages;
+}
+function resolveLatcherRegression(action,targetN){
+ const messages = [];
+ for(const n of NUMS){
+  if(action==="progress_latcher" && n===targetN) continue;
+  const c = getCell(n);
+  if(c.kind==="latcher" && c.value>0){
+   const maxValue = maxLatcherVitality(c.tier||0);
+   if(c.value < maxValue){
+    if(c.hold>0){
+     setCell(n, cell("latcher",c.value,0,c.direction,c.target,c.timer,c.tier||0,c.phase||0));
+     messages.push(`${n}: L${c.value} held`);
+    } else {
+     const nextValue = Math.min(maxValue, c.value + 1);
+     setCell(n, cell("latcher",nextValue,0,c.direction,c.target,c.timer,c.tier||0,c.phase||0));
+     game.strongFlags.latcher_regressed++;
+     messages.push(`${n}: L${c.value} regenerated to L${nextValue}`);
+    }
+   }
+  }
+ }
+ return messages;
+}
+function rayTiles(n,direction){
+ let [r,c] = NUM_TO_POS[n];
+ const [dr,dc] = DIRS[direction];
+ const out = [];
+ while(true){
+  r+=dr; c+=dc;
+  const candidate = POS_TO_NUM[`${r},${c}`];
+  if(!candidate) break;
+  out.push(candidate);
+ }
+ return out;
+}
+function ecoInDirection(n,direction){ return rayTiles(n,direction).filter(x=>ECO_KINDS.has(getCell(x).kind)); }
+function closestEcoInDirection(n,direction){ const e=ecoInDirection(n,direction); return e.length?e[0]:null; }
+function firstArbiterHitInDirection(n,direction){
+ for(const candidate of rayTiles(n,direction)){
+  const c = getCell(candidate);
+  if(ECO_KINDS.has(c.kind)) return {tile:candidate, kind:"eco"};
+  if(COMBATANT_KINDS.has(c.kind)) return {tile:candidate, kind:"combatant"};
+ }
+ return null;
+}
+function furthestEcoInDirection(n,direction){ const e=ecoInDirection(n,direction); return e.length?e[e.length-1]:null; }
+function chooseDirectionWithEco(n, preferFurthest){
+ const options = [];
+ for(let d=0;d<4;d++){
+  const e = ecoInDirection(n,d);
+  if(e.length){
+   const distance = preferFurthest ? rayTiles(n,d).length : rayTiles(n,d).indexOf(e[0])+1;
+   options.push([d,distance]);
+  }
+ }
+ if(!options.length) return getCell(n).direction;
+ let bestDistance = preferFurthest ? Math.max(...options.map(o=>o[1])) : Math.min(...options.map(o=>o[1]));
+ const best = options.filter(o=>o[1]===bestDistance).map(o=>o[0]);
+ return best[Math.floor(game.rng()*best.length)];
+}
+function destroyEco(n, reason){
+ if(!ECO_KINDS.has(getCell(n).kind)) return null;
+ setCell(n, cell());
+ game.strongFlags.eco_destroyed++;
+ return `${reason}: ${n} eco destroyed`;
+}
+
+function damageEcoByProjectile(n, reason){
+ const c = getCell(n);
+ if(!ECO_KINDS.has(c.kind)) return null;
+
+ if(c.kind==="charge"){
+  if(c.value<=0){
+   setCell(n, cell());
+   game.strongFlags.eco_destroyed++;
+   return `${reason}: ${n} C0 destroyed`;
+  }
+  setCell(n, cell("charge", c.value-1));
+  game.strongFlags.eco_destroyed++;
+  return `${reason}: ${n} C${c.value} damaged to C${c.value-1}`;
+ }
+
+ if(c.kind==="charge_dead"){
+  setCell(n, cell());
+  game.strongFlags.eco_destroyed++;
+  return `${reason}: ${n} C0 destroyed`;
+ }
+
+ if(c.kind==="flare"){
+  return `${reason}: ${n} flare ignored`;
+ }
+
+ setCell(n, cell());
+ game.strongFlags.eco_destroyed++;
+ return `${reason}: ${n} eco destroyed`;
+}
+function resolveArbiterPressure(){
+ const messages = [];
+ for(const n of NUMS){
+  const c = getCell(n);
+  if(c.kind!=="arbiter") continue;
+  if(c.value===1){
+   for(const direction of arbiterDirections(n,c)){
+    const hit = firstArbiterHitInDirection(n,direction);
+    if(hit && hit.kind==="eco"){
+     const msg=damageEcoByProjectile(hit.tile,`${n}: A*${DIR_GLYPHS[direction]} fired`);
+     if(msg) messages.push(msg);
+    } else if(hit && hit.kind==="combatant"){
+     messages.push(`${n}: A*${DIR_GLYPHS[direction]} blocked`);
+    }
+   }
+   setCell(n, cell("arbiter",0,0,c.direction,"",0,c.tier||0,c.phase||0));
+   messages.push(`${n}: A* -> A`);
+  } else {
+   const direction = chooseDirectionWithEco(n,false);
+   setCell(n, cell("arbiter",1,0,direction,"",0,c.tier||0,c.phase||0));
+   const arrows = arbiterDirections(n,getCell(n)).map(d=>DIR_GLYPHS[d]).join("");
+   messages.push(`${n}: A -> A*${arrows}`);
+  }
+ }
+ return messages;
+}
+function resolveLatcherPressure(){
+ const messages = [];
+ for(const n of NUMS){
+  const c = getCell(n);
+  if(c.kind!=="latcher") continue;
+  if(c.target && c.timer<=0){
+   const target = c.target;
+   if(ECO_KINDS.has(getCell(target).kind)){
+    const msg=damageEcoByProjectile(target,`${n}: L*${DIR_GLYPHS[c.direction]} attack`); if(msg) messages.push(msg);
+   } else messages.push(`${n}: L*${DIR_GLYPHS[c.direction]} found no eco at ${target}`);
+   const cur = getCell(n);
+   if(cur.kind==="latcher"){ cur.target=""; cur.timer=0; }
+   continue;
+  }
+  if(c.target && c.timer>0){ c.timer--; messages.push(`${n}: L*${DIR_GLYPHS[c.direction]} targeting ${c.target}`); continue; }
+  if(game.turn % 3 === 0){
+   const info = chooseLatcherTarget(n);
+   if(info){
+    c.target = info.target; c.direction = info.direction; c.timer = 1;
+    messages.push(`${n}: L*${DIR_GLYPHS[c.direction]} marked ${c.target}`);
+   }
+  }
+ }
+ return messages;
+}
+function chooseLatcherTarget(n){
+ const direction = chooseDirectionWithEco(n,true);
+ const target = furthestEcoInDirection(n,direction);
+ return target ? {target,direction} : null;
+}
+function forwardTile(n,direction){
+ const [r,c] = NUM_TO_POS[n];
+ const [dr,dc] = DIRS[direction];
+ return POS_TO_NUM[`${r+dr},${c+dc}`] || null;
+}
+function resolveExecutorPressure(){
+ const messages = [];
+ const tiles = NUMS.filter(n=>["executor","executor_breached"].includes(getCell(n).kind));
+ for(const n of tiles){
+  const c = getCell(n);
+  if(!["executor","executor_breached"].includes(c.kind)) continue;
+  if(c.target){
+   if(c.kind==="executor_breached" && c.timer>0){
+    c.timer--;
+    messages.push(`${n}: e**${DIR_GLYPHS[c.direction]} bearing down on ${c.target}`);
+    continue;
+   }
+   const target = c.target;
+   if(ECO_KINDS.has(getCell(target).kind)){
+    const msg=destroyEco(target,`${n}: Executor crush`); if(msg) messages.push(msg);
+   } else messages.push(`${n}: Executor crush found no eco at ${target}`);
+   const cur = getCell(n);
+   if(["executor","executor_breached"].includes(cur.kind)){ cur.target=""; cur.timer=0; }
+   continue;
+  }
+  const front = forwardTile(n,c.direction);
+  if(front===null){ c.direction=(c.direction+1)%4; messages.push(`${n}: Executor turned right`); continue; }
+  const fc = getCell(front);
+  if(ECO_KINDS.has(fc.kind)){
+   c.target=front;
+   c.timer = c.kind==="executor_breached" ? 1 : 0;
+   messages.push(`${n}: ${c.kind==="executor_breached"?"e**":"E*"} loaded on ${front}`);
+   continue;
+  }
+  if(COMBATANT_KINDS.has(fc.kind)){
+   c.direction=(c.direction+1)%4;
+   messages.push(`${n}: Executor blocked by combatant, turned right`);
+   continue;
+  }
+  if(fc.kind==="empty"){
+   setCell(front, cell(c.kind,c.value,c.hold,c.direction,c.target,c.timer,c.tier||0,c.phase||0));
+   setCell(n, cell());
+   messages.push(`${n}->${front}: Executor moved`);
+   continue;
+  }
+  c.direction=(c.direction+1)%4; messages.push(`${n}: Executor blocked, turned right`);
+ }
+ return messages;
+}
+
+function rollTier(turn){
+ let elite=0, boss=0;
+ if(turn>=4 && turn<=9){ elite=0.04; boss=0.005; }
+ else if(turn<=19){ elite=0.07; boss=0.01; }
+ else if(turn<=34){ elite=0.11; boss=0.02; }
+ else if(turn<=49){ elite=0.16; boss=0.04; }
+ else if(turn<=64){ elite=0.22; boss=0.07; }
+ else if(turn<=79){ elite=0.28; boss=0.10; }
+ else if(turn<=99){ elite=0.35; boss=0.14; }
+ else { elite=0.42; boss=0.18; }
+
+ const r = chanceFor(game.pressureSeed, turn+999);
+ if(r < boss) return 2;
+ if(r < boss + elite) return 1;
+ return 0;
+}
+
+function resolveTierForSpawn(rawTier, spawnKind, highTierServedThisTurn, spawnNumber){
+ let tier = rawTier;
+
+ if(tier===2 && recentSpawnCount(game.turn, 8, 2)>0){
+  tier = 1;
+ }
+
+ if(tier===1 && recentSpawnCount(game.turn, 5, 1)>=2){
+  const smoothRoll = chanceFor(game.pressureSeed + 626262 + spawnNumber, game.turn);
+  if(smoothRoll < 0.40) tier = 0;
+ }
+
+ if(tier===2 && spawnKind==="latcher"){
+  const latcherRoll = chanceFor(game.pressureSeed + 737373 + spawnNumber, game.turn);
+  if(latcherRoll < 0.40) tier = 1;
+ }
+
+ if(highTierServedThisTurn && tier>0){
+  tier = 0;
+ }
+
+ return tier;
+}
+
+function rememberSpawn(turn, kind, tier){
+ game.spawnHistory.push({turn, kind, tier});
+ if(game.spawnHistory.length > 80){
+  game.spawnHistory.shift();
+ }
+}
+
+
+
+function baseSpawnCountForTurn(turnNumber=null){
+ const t = turnNumber ?? game.turn;
+
+ if(t===1) return 0;
+ if(t===2) return 1;
+
+ const roll = chanceFor(game.pressureSeed, t);
+ const roll2 = chanceFor(game.pressureSeed + 31337, t);
+
+ if(t<=10){
+  if(roll < 0.35) return 0;
+  return 1;
+ }
+
+ if(t<=20){
+  if(roll < 0.30) return 0;
+  return 1;
+ }
+
+ if(t<=30){
+  if(roll < 0.24) return 0;
+  if(roll < 0.98) return 1;
+  return 2;
+ }
+
+ if(t<=52){
+  if(roll < 0.24) return 0;
+  return 1;
+ }
+
+ if(t<=82){
+  if(roll < 0.18) return 0;
+  if(roll < 0.90) return 1;
+  return 2;
+ }
+
+ if(t<=112){
+  if(roll < 0.12) return 0;
+  if(roll < 0.88) return 1;
+  return 2;
+ }
+
+ if(t<=140){
+  if(roll < 0.04) return 1;
+  if(roll < 0.78) return 2;
+  return roll2 < 0.16 ? 3 : 2;
+ }
+
+ if(roll < 0.02) return 1;
+ if(roll < 0.58) return 2;
+ return 3;
+}
+
+function recentSpawnCount(turn, windowTurns, tier=null){
+ let count = 0;
+ for(const s of game.spawnHistory){
+  if(turn - s.turn > 0 && turn - s.turn <= windowTurns){
+   if(tier===null || s.tier===tier) count++;
+  }
+ }
+ return count;
+}
+
+function recentTurnSpawnCount(turn, offset){
+ let count = 0;
+ const targetTurn = turn - offset;
+ for(const s of game.spawnHistory){
+  if(s.turn===targetTurn) count++;
+ }
+ return count;
+}
+
+function spawnCountForTurn(turnNumber=null){
+ const t = turnNumber ?? game.turn;
+ let count = baseSpawnCountForTurn(t);
+
+ if(t >= 3 && t <= 12 && count===0){
+  const last1 = recentTurnSpawnCount(t, 1);
+  const last2 = recentTurnSpawnCount(t, 2);
+
+  if(last1===0 && last2===0){
+   count = 1;
+  }
+ }
+
+ if(count >= 2 && recentTurnSpawnCount(t, 1) >= 2){
+  const calmRoll = chanceFor(game.pressureSeed + 515151, t);
+  if(calmRoll < 0.50) count = 1;
+ }
+
+ if(t > 82 && t <= 112 && count >= 2){
+  const last1 = recentTurnSpawnCount(t, 1);
+  const last2 = recentTurnSpawnCount(t, 2);
+  const streakRoll = chanceFor(game.pressureSeed + 848484, t);
+
+  if(last1 >= 2 && last2 >= 2){
+   if(streakRoll < 0.75) count = 1;
+  } else if(last1 >= 1 && last2 >= 1){
+   if(streakRoll < 0.40) count = 1;
+  }
+ }
+
+ return count;
+}
+
+function boardIsFull(){ return emptyTiles().length===0; }
+function collapseIfNeeded(){
+ if(game.collapsed) return null;
+
+ if(!boardIsFull()){
+  game.collapseGrace = false;
+  return null;
+ }
+
+ const nextTurn = game.turn + 1;
+
+ if(!ecoTiles().length){
+  return enterCollapse("system collapse. observe.");
+ }
+
+ if(game.spawningEnabled && spawnCountForTurn(nextTurn)>0){
+  if(game.collapseGrace){
+   return enterCollapse(`Board is full; enemy pressure is scheduled for turn ${nextTurn}.`);
+  }
+  game.collapseGrace = true;
+  return "Collapse warning: make space now.";
+ }
+
+ return null;
+}
+function enterCollapse(reason){
+ game.collapsed=true;
+ game.reviewing=true;
+ game.collapseReason=reason;
+ return "Collapse: " + reason;
+}
+
+function nextSpawnKind(){
+ if(!game.spawnBag.length){
+  game.spawnBag = [...SPAWN_KIND_ORDER];
+  shuffle(game.spawnBag, game.rng);
+ }
+ return game.spawnBag.pop();
+}
+function maybeSpawnCombatant(){
+ if(!game.spawningEnabled) return null;
+ const spawnCount = spawnCountForTurn();
+ if(spawnCount<=0) return null;
+ const messages = [];
+ let highTierServedThisTurn = false;
+ const plans = ensurePlannedSpawns();
+ const spawnedTiles = new Set();
+
+ for(let i=0;i<spawnCount;i++){
+  if(!emptyTiles().length) break;
+
+  const plan = plans.length > i ? plans[i] : null;
+
+  const spawnKind = plan ? plan.kind : nextSpawnKind();
+  let spawnTile = plan ? plan.tile : "";
+  const rawTier = rollTier(game.turn);
+  const tier = resolveTierForSpawn(rawTier, spawnKind, highTierServedThisTurn, i);
+  const direction = plan ? plan.direction : Math.floor(game.rng()*4);
+
+  if(!spawnTile || getCell(spawnTile).kind!=="empty" || spawnedTiles.has(spawnTile)){
+   const laneChoice = plan ? laneChoiceForIngress(plan.ingressIndex, spawnedTiles) : chooseIngressLane(spawnedTiles, i);
+   if(!laneChoice || !laneChoice.candidates.length){
+    continue;
+   }
+   spawnTile = chooseTileFromCandidates(laneChoice.candidates, i, 55555);
+  }
+
+  spawnedTiles.add(spawnTile);
+  game.spawnIndex++;
+  if(tier>0) highTierServedThisTurn = true;
+  rememberSpawn(game.turn, spawnKind, tier);
+  if(spawnKind==="latcher"){
+   setCell(spawnTile, cell("latcher", tier===2?4:(tier===1?3:2),0,1,"",0,tier,0));
+   messages.push(`${spawnTile}: Latcher appeared`);
+  }
+  else if(spawnKind==="arbiter"){
+   setCell(spawnTile, cell("arbiter",0,0,direction,"",0,tier,0));
+   messages.push(`${spawnTile}: Arbiter appeared`);
+  }
+  else if(spawnKind==="executor"){
+   setCell(spawnTile, cell("executor", tier===2?4:(tier===1?3:2),0,direction,"",0,tier,0));
+   messages.push(`${spawnTile}: Executor appeared ${DIR_GLYPHS[direction]}`);
+  }
+
+ }
+ game.plannedSpawn = null;
+ game.plannedSpawns = [];
+ return messages.length ? messages.join(" | ") : null;
+}
+
+const WATCHER_RESET_HOLD_MS = 2000;
+const WATCHER_TAP_MAX_MS = 350;
+let watcherHoldTimer = null;
+let watcherHoldStartedAt = 0;
+let watcherPointerId = null;
+let watcherResetTriggered = false;
+
+function clearWatcherHoldVisual(){
+ const watcher = document.getElementById("watcherBtn");
+ if(watcher){
+  watcher.classList.remove("resetHold");
+ }
+}
+
+function cancelWatcherHold(){
+ if(watcherHoldTimer){
+  clearTimeout(watcherHoldTimer);
+  watcherHoldTimer = null;
+ }
+ watcherHoldStartedAt = 0;
+ watcherPointerId = null;
+ watcherResetTriggered = false;
+ clearWatcherHoldVisual();
+}
+
+function completeWatcherReset(){
+ watcherHoldTimer = null;
+ watcherResetTriggered = true;
+ clearWatcherHoldVisual();
+ newGame("plane is empty.");
+}
+
+function watcherPointerDown(e){
+ if(e.pointerType === "mouse" && e.button !== 0) return;
+
+ if(!game.collapsed){
+  watcherHoldStartedAt = performance.now();
+  watcherPointerId = e.pointerId;
+  return;
+ }
+
+ const watcher = document.getElementById("watcherBtn");
+ watcherHoldStartedAt = performance.now();
+ watcherPointerId = e.pointerId;
+ watcherResetTriggered = false;
+ if(watcher){
+  watcher.setPointerCapture(e.pointerId);
+  watcher.classList.add("resetHold");
+ }
+ watcherHoldTimer = setTimeout(completeWatcherReset, WATCHER_RESET_HOLD_MS);
+ e.preventDefault();
+}
+
+function watcherPointerUp(e){
+ if(watcherPointerId !== null && e.pointerId !== watcherPointerId) return;
+
+ const elapsed = watcherHoldStartedAt ? performance.now() - watcherHoldStartedAt : 0;
+ const wasCollapsed = game.collapsed;
+ const resetAlreadyTriggered = watcherResetTriggered;
+
+ if(watcherHoldTimer){
+  clearTimeout(watcherHoldTimer);
+  watcherHoldTimer = null;
+ }
+ clearWatcherHoldVisual();
+ watcherPointerId = null;
+ watcherHoldStartedAt = 0;
+ watcherResetTriggered = false;
+
+ if(resetAlreadyTriggered) return;
+
+ if(!wasCollapsed){
+  passTime();
+  return;
+ }
+
+ if(elapsed <= WATCHER_TAP_MAX_MS){
+  passTime();
+ }
+}
+
+function watcherPointerCancel(e){
+ if(watcherPointerId !== null && e.pointerId !== watcherPointerId) return;
+ cancelWatcherHold();
+}
+
+document.getElementById("restartBtn").onclick = () => {
+ newGame("Restarted by choice.");
+};
+document.getElementById("undoBtn").onclick = () => {
+ undoOneAction();
+};
+document.getElementById("redoBtn").onclick = () => {
+ redoOneAction();
+};
+const watcherBtn = document.getElementById("watcherBtn");
+watcherBtn.addEventListener("pointerdown", watcherPointerDown);
+watcherBtn.addEventListener("pointerup", watcherPointerUp);
+watcherBtn.addEventListener("pointercancel", watcherPointerCancel);
+watcherBtn.addEventListener("lostpointercapture", watcherPointerCancel);
+document.getElementById("helpBtn").onclick = () => document.getElementById("help").classList.add("visible");
+document.getElementById("closeHelp").onclick = () => document.getElementById("help").classList.remove("visible");
+document.getElementById("help").addEventListener("click",(e)=>{ if(e.target.id==="help") document.getElementById("help").classList.remove("visible"); });
+
+newGame();
+
+function redo(){
+ if(!game.redoStack.length) return;
+ const next = game.redoStack.pop();
+ game.history.push(JSON.stringify(game));
+ Object.assign(game, JSON.parse(next));
+ render();
+}
+
+</script>
+</body>
+</html>
