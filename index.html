@@ -60,14 +60,15 @@ button.danger{border-color:#56303a;color:#ffb7b7;}
 .bad{color:var(--bad)}
 .releaseText{color:#ff9a9a}
 .board{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:14px 0;position:relative;}
-.tile{aspect-ratio:1/1;background:linear-gradient(180deg,#171722,#101018);border:1px solid #272536;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:clamp(24px,9vw,46px);font-weight:800;letter-spacing:.01em;user-select:none;position:relative;z-index:1;box-shadow:inset 0 0 0 1px rgba(255,255,255,.015),0 8px 22px rgba(0,0,0,.22);}
+.tile{aspect-ratio:1/1;background:linear-gradient(180deg,#171722,#101018);border:1px solid #272536;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:clamp(20px,7vw,36px);white-space:nowrap;overflow:hidden;text-overflow:clip;font-weight:800;letter-spacing:.01em;user-select:none;position:relative;z-index:1;box-shadow:inset 0 0 0 1px rgba(255,255,255,.015),0 8px 22px rgba(0,0,0,.22);}
 .tile:active{background:#222232;transform:translateY(1px);}
 .tile.selected{outline:2px solid rgba(215,103,255,.65);box-shadow:0 0 0 4px rgba(215,103,255,.12),0 10px 26px rgba(0,0,0,.28);}
 .tile.targetable{outline:2px solid rgba(255,255,255,.10);}
 .tile.badtarget{opacity:.35;filter:saturate(.4);}
 .tile.empty{color:#34313d}
+.tile span{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:clip;}
 
-.log{min-height:0;background:transparent;border:0;padding:4px 4px;font-size:12px;line-height:1.25;color:var(--dim);text-align:center;}
+.log{min-height:0;background:transparent;border:0;padding:4px 4px;font-size:12px;line-height:1.25;color:var(--dim);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .help{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10;padding:18px;overflow:auto;}
 .help.visible{display:block}
 .helpBox{max-width:680px;margin:20px auto;background:#101018;border:1px solid #2b2938;border-radius:18px;padding:18px;box-shadow:0 18px 60px rgba(0,0,0,.55);}
@@ -415,6 +416,39 @@ body.collapse-state .footerKey{
 }
 
 
+
+@media (max-width:420px){
+ .helpBox{
+  margin:8px auto;
+  padding:14px;
+  border-radius:14px;
+ }
+ .helpBox h1{
+  font-size:18px;
+  margin:0 0 6px;
+ }
+ .helpBox h2{
+  font-size:13px;
+  margin:12px 0 4px;
+ }
+ .helpBox h3{
+  font-size:11px;
+  margin:10px 0 3px;
+ }
+ .helpBox p,
+ .helpBox li{
+  font-size:11px;
+  line-height:1.28;
+ }
+ .helpBox ul{
+  margin:4px 0;
+  padding-left:18px;
+ }
+ .help{
+  padding:10px;
+ }
+}
+
 </style>
 </head>
 <body>
@@ -507,9 +541,10 @@ body.collapse-state .footerKey{
 
 <h3>flow</h3>
 <ul>
-<li>build power → spend power → world shifts</li>
-<li>observe advances time</li>
-<li>collapse rewinds recent states</li>
+<li>build&nbsp;power&nbsp;→&nbsp;spend&nbsp;power&nbsp;→&nbsp;world&nbsp;shifts</li>
+<li>observe to advance time</li>
+<li>observe in collapse to learn</li>
+<li>hold observe in collapse to begin again</li>
 </ul>
 
 <h3>collapse</h3>
@@ -706,10 +741,10 @@ function tokenFor(n){
   const isBoss = c.tier===2;
   const isContainedBoss = isBoss && c.phase===2;
   const arrows = isContainedBoss ? "" : (c.value===1 ? arbiterDirections(n,c).map(d=>DIR_GLYPHS[d]).join("") : "");
-  const suffix = isBoss ? "++" : "";
+  const suffix = c.tier===2 ? "++" : (c.tier===1 ? "+" : "");
   const letter = isContainedBoss ? "a" : "A";
   if(isContainedBoss) return `${letter}0${suffix}`;
-  if(c.value===1) return `${letter}*${suffix}${arrows}`;
+  if(c.value===1) return `${letter}${suffix}*${arrows}`;
   return `${letter}${suffix}`;
  }
  if(c.kind==="latcher"){
