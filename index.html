@@ -49,6 +49,71 @@ button:active{transform:translateY(1px);background:#242434;}
 button.primary{border-color:#45405b;background:#202033;}
 button.danger{border-color:#56303a;color:#ffb7b7;}
 .status{background:rgba(17,17,26,.88);border:1px solid #232230;border-radius:14px;padding:7px 10px;margin-bottom:8px;font-size:11px;line-height:1.45;opacity:.72;}
+.seedInput{
+ width:78px;
+ min-width:0;
+ background:transparent;
+ border:0;
+ border-bottom:1px solid rgba(138,133,147,.28);
+ color:var(--muted);
+ font:inherit;
+ font-size:11px;
+ text-align:right;
+ padding:0 0 1px;
+ outline:none;
+}
+.seedInput:focus{
+ color:var(--text);
+ border-bottom-color:rgba(155,92,255,.72);
+}
+.dailyBtn{
+ background:transparent;
+ border:1px solid rgba(138,133,147,.28);
+ border-radius:7px;
+ color:var(--muted);
+ font:inherit;
+ font-size:10px;
+ padding:1px 6px;
+ margin-left:6px;
+ cursor:pointer;
+}
+.dailyBtn:active{
+ transform:translateY(1px);
+ background:rgba(155,92,255,.10);
+}
+.dailyBtn:focus{
+ outline:none;
+ border-color:rgba(155,92,255,.72);
+ color:var(--text);
+}
+.shareCollapseWrap{
+ display:none;
+ justify-content:center;
+ align-items:center;
+ margin:6px 0 2px;
+}
+body.collapse-state .shareCollapseWrap{
+ display:flex;
+}
+.shareCollapseBtn{
+ background:transparent;
+ border:1px solid rgba(138,133,147,.28);
+ border-radius:9px;
+ color:var(--muted);
+ font:inherit;
+ font-size:11px;
+ padding:5px 10px;
+ cursor:pointer;
+}
+.shareCollapseBtn:active{
+ transform:translateY(1px);
+ background:rgba(155,92,255,.10);
+}
+.shareCollapseBtn:focus{
+ outline:none;
+ border-color:rgba(155,92,255,.72);
+ color:var(--text);
+}
 .row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .muted{color:var(--muted)}
 .good{color:var(--good)}
@@ -449,6 +514,125 @@ body.collapse-state .footerKey{
  }
 }
 
+
+.sharePreview{
+ display:none;
+ position:fixed;
+ inset:0;
+ z-index:20;
+ background:rgba(0,0,0,.84);
+ padding:18px;
+ overflow:auto;
+}
+.sharePreview.visible{
+ display:flex;
+ align-items:center;
+ justify-content:center;
+}
+.sharePreviewBox{
+ width:min(520px,100%);
+ background:#09090d;
+ border:1px solid rgba(216,213,222,.16);
+ border-radius:16px;
+ padding:12px;
+ box-shadow:0 18px 60px rgba(0,0,0,.58);
+}
+.sharePreviewActions{
+ display:flex;
+ justify-content:flex-end;
+ gap:8px;
+ margin-bottom:10px;
+}
+.sharePreviewActions button{
+ background:#101018;
+ border:1px solid rgba(138,133,147,.28);
+ border-radius:9px;
+ color:var(--muted);
+ font:inherit;
+ font-size:11px;
+ padding:6px 10px;
+}
+.sharePreviewActions button:active{
+ transform:translateY(1px);
+ background:rgba(155,92,255,.10);
+}
+#sharePreviewImg{
+ display:block;
+ width:100%;
+ height:auto;
+ border-radius:10px;
+ user-select:auto;
+ -webkit-user-select:auto;
+ -webkit-touch-callout:default;
+}
+
+
+/* mobile viewport fit: keep game above browser gesture bar */
+@media (max-width:420px){
+ html,body{
+  min-height:100dvh;
+  overflow:hidden;
+ }
+ body{
+  align-items:flex-start;
+  padding:10px 12px calc(8px + env(safe-area-inset-bottom));
+ }
+ #app{
+  max-height:calc(100dvh - 18px - env(safe-area-inset-bottom));
+  overflow:hidden;
+ }
+ .header{
+  margin-bottom:7px;
+ }
+ .sub{
+  margin-top:2px;
+ }
+ .headerSignature{
+  margin-top:3px;
+ }
+ .status{
+  padding:5px 10px;
+  margin-bottom:6px;
+  line-height:1.3;
+ }
+ .board{
+  gap:8px;
+  margin:10px 0;
+ }
+ .watcherWrap{
+  margin:7px 0 1px;
+ }
+ .watcher{
+  width:68px;
+  height:68px;
+ }
+ .watcher::before{
+  width:36px;
+  height:18px;
+ }
+ .watcher::after{
+  width:9px;
+  height:9px;
+ }
+ .watcherLabel{
+  font-size:11px;
+  margin-bottom:0;
+ }
+ .footerKey{
+  margin:4px 0 5px !important;
+  gap:3px !important;
+  line-height:1.34;
+ }
+ .log{
+  padding:2px 4px;
+  font-size:11px;
+  line-height:1.15;
+ }
+ .shareCollapseWrap{
+  margin:3px 0 1px;
+ }
+}
+
 </style>
 </head>
 <body>
@@ -460,6 +644,7 @@ body.collapse-state .footerKey{
   </div>
   <div>
    <div class="buttons">
+    <button id="dailySeedBtn">daily</button>
     <button id="helpBtn">help</button>
    </div>
    <div class="headerSignature">still form - brian schafheimer</div>
@@ -474,6 +659,10 @@ body.collapse-state .footerKey{
    <button id="watcherBtn" class="watcher" aria-label="observe"></button>
    <div class="watcherLabel">observe</div>
   </div>
+ </div>
+
+ <div class="shareCollapseWrap">
+  <button id="shareCollapseBtn" class="shareCollapseBtn" type="button">share collapse</button>
  </div>
 
  <div class="footerKey" style="
@@ -554,6 +743,16 @@ body.collapse-state .footerKey{
   </div>
 </div>
 
+<div id="sharePreview" class="sharePreview">
+ <div class="sharePreviewBox">
+  <div class="sharePreviewActions">
+   <button id="nativeShareBtn" type="button">share</button>
+   <button id="closeSharePreviewBtn" type="button">close</button>
+  </div>
+  <img id="sharePreviewImg" alt="inducta collapse share image">
+ </div>
+</div>
+
 <script>
 const NUMS = ["7","8","9","4","5","6","1","2","3"];
 const NUM_TO_POS = {"7":[0,0],"8":[0,1],"9":[0,2],"4":[1,0],"5":[1,1],"6":[1,2],"1":[2,0],"2":[2,1],"3":[2,2]};
@@ -591,9 +790,13 @@ function cell(kind="empty", value=0, hold=0, direction=1, target="", timer=0, ti
 function cloneCell(c){ return cell(c.kind,c.value,c.hold,c.direction,c.target,c.timer,c.tier||0,c.phase||0); }
 
 let game;
+let seedMode = "random";
+let collapseShareSnapshot = null;
 
-function newGame(message="plane is empty"){
- const runSeed = Math.floor(Math.random()*1000000000);
+function newGame(message="plane is empty", seedOverride=null){
+ collapseShareSnapshot = null;
+ const parsedSeed = Number.parseInt(seedOverride, 10);
+ const runSeed = Number.isFinite(parsedSeed) ? (parsedSeed >>> 0) : Math.floor(Math.random()*1000000000);
  game = {
   board: {},
   turn: 1,
@@ -1004,6 +1207,14 @@ function boardDangerState(){
  return "";
 }
 
+
+function dailySeedForDate(dateObj=new Date()){
+ const year = dateObj.getFullYear();
+ const month = dateObj.getMonth() + 1;
+ const day = dateObj.getDate();
+ return (year * 10000 + month * 100 + day) >>> 0;
+}
+
 function render(){
 
  if(game.collapsed){
@@ -1017,13 +1228,45 @@ function render(){
  status.innerHTML = `
   <div class="row">
    <div>turn <b>${game.turn}</b> · cleared <b>${game.clearedCount}</b></div>
-   <div class="muted">seed ${game.runSeed}</div>
+   <div class="muted">seed <input id="seedInput" class="seedInput" value="${game.runSeed}" inputmode="numeric" pattern="[0-9]*" aria-label="run seed"></div>
   </div>
   
   
   ${game.collapsed ? `<div class="warn">${game.collapseReason}</div>` : ""}
-  ${game.collapseGrace && !game.collapsed ? `<div class="warn">collapse warning · make space now</div>` : ""}
+  ${boardDangerState()==="danger" && !game.collapsed ? `<div class="warn">collapse imminent</div>` : ""}
  `;
+
+ const seedInput = document.getElementById("seedInput");
+ if(seedInput){
+  seedInput.addEventListener("click",(e)=>{ e.stopPropagation(); });
+  seedInput.addEventListener("keydown",(e)=>{
+   if(e.key==="Enter"){
+    const requestedSeed = seedInput.value.trim();
+    if(requestedSeed){
+     seedMode = "manual";
+     newGame(`seed ${requestedSeed} · ready`, requestedSeed);
+    }
+   }
+  });
+ }
+
+ const dailySeedBtn = document.getElementById("dailySeedBtn");
+ if(dailySeedBtn){
+  dailySeedBtn.onclick = (e)=>{
+   e.stopPropagation();
+
+   if(seedMode==="random"){
+    seedMode = "daily";
+    const dailySeed = dailySeedForDate();
+    newGame(`daily seed ${dailySeed} · ready`, dailySeed);
+    return;
+   }
+
+   seedMode = "random";
+   newGame("random seed · ready");
+  };
+  dailySeedBtn.textContent = seedMode==="daily" ? "random" : "daily";
+ }
 
  const board = document.getElementById("board");
  const boardWrap = document.getElementById("app");
@@ -1817,7 +2060,7 @@ function collapseIfNeeded(){
    return enterCollapse(`board is full · pressure arrives turn ${nextTurn}`);
   }
   game.collapseGrace = true;
-  return "collapse warning · make space now";
+  return "collapse imminent";
  }
 
  return null;
@@ -1826,6 +2069,9 @@ function enterCollapse(reason){
  game.collapsed=true;
  game.reviewing=true;
  game.collapseReason=reason;
+ if(!collapseShareSnapshot){
+  collapseShareSnapshot = captureCollapseShareSnapshot();
+ }
  return "collapse · " + reason;
 }
 
@@ -1887,6 +2133,197 @@ function maybeSpawnCombatant(){
  return messages.length ? messages.join(" | ") : null;
 }
 
+
+
+function shareColorKindForCell(c){
+ if(["root","charge","charge_dead","flare"].includes(c.kind)) return "eco";
+ if(c.kind==="arbiter") return "arbiter";
+ if(c.kind==="latcher") return "latcher";
+ if(c.kind==="executor" || c.kind==="executor_breached") return "executor";
+ return "empty";
+}
+
+function captureCollapseShareSnapshot(){
+ const board = {};
+ for(const n of NUMS){
+  const c = getCell(n);
+  board[n] = {
+   token: tokenFor(n) || "·",
+   colorKind: shareColorKindForCell(c)
+  };
+ }
+ return {
+  seed: game.runSeed,
+  turn: game.turn,
+  cleared: game.clearedCount,
+  board: board,
+  line: "system collapse. observe."
+ };
+}
+
+function getCollapseShareSnapshot(){
+ if(collapseShareSnapshot) return collapseShareSnapshot;
+ return captureCollapseShareSnapshot();
+}
+
+function collapseShareText(){
+ const snapshot = getCollapseShareSnapshot();
+ const lines = [];
+ lines.push("inducta");
+ lines.push("");
+ lines.push(`seed ${snapshot.seed}`);
+ lines.push(`turn ${snapshot.turn} · cleared ${snapshot.cleared}`);
+ lines.push("");
+ lines.push(`${snapshot.board["7"].token}  ${snapshot.board["8"].token}  ${snapshot.board["9"].token}`);
+ lines.push(`${snapshot.board["4"].token}  ${snapshot.board["5"].token}  ${snapshot.board["6"].token}`);
+ lines.push(`${snapshot.board["1"].token}  ${snapshot.board["2"].token}  ${snapshot.board["3"].token}`);
+ lines.push("");
+ lines.push(snapshot.line);
+ return lines.join("\n");
+}
+
+function drawCollapseShareCanvas(){
+ const snapshot = getCollapseShareSnapshot();
+ const scale = Math.max(2, Math.min(3, window.devicePixelRatio || 2));
+ const width = 860;
+ const height = 980;
+ const canvas = document.createElement("canvas");
+ canvas.width = width * scale;
+ canvas.height = height * scale;
+ canvas.style.width = `${width}px`;
+ canvas.style.height = `${height}px`;
+
+ const ctx = canvas.getContext("2d");
+ ctx.scale(scale, scale);
+
+ ctx.fillStyle = "#09090d";
+ ctx.fillRect(0, 0, width, height);
+
+ ctx.strokeStyle = "rgba(216,213,222,.14)";
+ ctx.lineWidth = 2;
+ ctx.strokeRect(56, 56, width - 112, height - 112);
+
+ ctx.font = "700 34px ui-monospace, SFMono-Regular, Consolas, Menlo, monospace";
+ ctx.fillStyle = "#d8d5de";
+ ctx.textAlign = "left";
+ ctx.textBaseline = "top";
+ ctx.fillText("inducta", 110, 108);
+
+ ctx.font = "400 21px ui-monospace, SFMono-Regular, Consolas, Menlo, monospace";
+ ctx.fillStyle = "#8a8593";
+ ctx.fillText(`seed ${snapshot.seed}`, 110, 178);
+ ctx.fillText(`turn ${snapshot.turn} · cleared ${snapshot.cleared}`, 110, 214);
+
+ const tileSize = 160;
+ const gap = 22;
+ const boardX = (width - ((tileSize * 3) + (gap * 2))) / 2;
+ const boardY = 305;
+ const boardNums = [["7","8","9"],["4","5","6"],["1","2","3"]];
+
+ for(let r=0; r<3; r++){
+  for(let c=0; c<3; c++){
+   const n = boardNums[r][c];
+   const shareCell = snapshot.board[n];
+   const x = boardX + c * (tileSize + gap);
+   const y = boardY + r * (tileSize + gap);
+
+   ctx.fillStyle = "#101018";
+   ctx.strokeStyle = "rgba(216,213,222,.16)";
+   ctx.lineWidth = 2;
+   ctx.beginPath();
+   ctx.roundRect(x, y, tileSize, tileSize, 18);
+   ctx.fill();
+   ctx.stroke();
+
+   const token = shareCell.token || "·";
+   if(shareCell.colorKind==="eco"){
+    ctx.fillStyle = "#9b5cff";
+   } else if(shareCell.colorKind==="arbiter"){
+    ctx.fillStyle = "#4fb8ff";
+   } else if(shareCell.colorKind==="latcher"){
+    ctx.fillStyle = "#39f56f";
+   } else if(shareCell.colorKind==="executor"){
+    ctx.fillStyle = "#ff9a4f";
+   } else {
+    ctx.fillStyle = "#5f5a68";
+   }
+
+   ctx.font = "800 41px ui-monospace, SFMono-Regular, Consolas, Menlo, monospace";
+   ctx.textAlign = "center";
+   ctx.textBaseline = "middle";
+   ctx.fillText(token, x + tileSize / 2, y + tileSize / 2);
+  }
+ }
+
+ ctx.font = "400 24px ui-monospace, SFMono-Regular, Consolas, Menlo, monospace";
+ ctx.textAlign = "left";
+ ctx.textBaseline = "top";
+ ctx.fillStyle = "#8d93a1";
+ ctx.textAlign = "center";
+ ctx.fillText(snapshot.line, width / 2, 885);
+
+ return canvas;
+}
+
+function canvasToBlob(canvas){
+ return new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+}
+
+let currentShareFile = null;
+
+async function shareCollapse(){
+ if(!game.collapsed) return;
+
+ const canvas = drawCollapseShareCanvas();
+ const blob = await canvasToBlob(canvas);
+ if(!blob) return;
+
+ const snapshot = getCollapseShareSnapshot();
+ currentShareFile = new File([blob], `inducta-${snapshot.seed}-turn-${snapshot.turn}.png`, {type:"image/png"});
+
+ const preview = document.getElementById("sharePreview");
+ const img = document.getElementById("sharePreviewImg");
+ const nativeShareBtn = document.getElementById("nativeShareBtn");
+
+ if(img){
+  img.src = canvas.toDataURL("image/png");
+ }
+ if(nativeShareBtn){
+  const canNativeShare = navigator.canShare && navigator.canShare({files:[currentShareFile]});
+  nativeShareBtn.style.display = canNativeShare ? "inline-block" : "none";
+ }
+ if(preview){
+  preview.classList.add("visible");
+ }
+
+ game.last = "collapse image ready";
+ render();
+}
+
+async function nativeShareCollapseImage(){
+ if(!currentShareFile) return;
+ if(navigator.canShare && navigator.canShare({files:[currentShareFile]})){
+  await navigator.share({
+   files:[currentShareFile],
+   title:"inducta",
+   text:collapseShareText()
+  });
+ }
+}
+
+function closeSharePreview(){
+ const preview = document.getElementById("sharePreview");
+ const img = document.getElementById("sharePreviewImg");
+ if(preview){
+  preview.classList.remove("visible");
+ }
+ if(img){
+  img.removeAttribute("src");
+ }
+ currentShareFile = null;
+}
+
+
 const WATCHER_RESET_HOLD_MS = 2000;
 const WATCHER_TAP_MAX_MS = 350;
 let watcherHoldTimer = null;
@@ -1916,7 +2353,13 @@ function completeWatcherReset(){
  watcherHoldTimer = null;
  watcherResetTriggered = true;
  clearWatcherHoldVisual();
- newGame("plane is empty");
+ if(seedMode==="daily"){
+  const dailySeed = dailySeedForDate();
+  newGame(`daily seed ${dailySeed} · ready`, dailySeed);
+ } else {
+  seedMode = "random";
+  newGame("random seed · ready");
+ }
 }
 
 function watcherPointerDown(e){
@@ -1971,6 +2414,26 @@ function watcherPointerUp(e){
 function watcherPointerCancel(e){
  if(watcherPointerId !== null && e.pointerId !== watcherPointerId) return;
  cancelWatcherHold();
+}
+const shareCollapseBtn = document.getElementById("shareCollapseBtn");
+if(shareCollapseBtn){
+ shareCollapseBtn.addEventListener("click", shareCollapse);
+}
+const nativeShareBtn = document.getElementById("nativeShareBtn");
+if(nativeShareBtn){
+ nativeShareBtn.addEventListener("click", nativeShareCollapseImage);
+}
+const closeSharePreviewBtn = document.getElementById("closeSharePreviewBtn");
+if(closeSharePreviewBtn){
+ closeSharePreviewBtn.addEventListener("click", closeSharePreview);
+}
+const sharePreview = document.getElementById("sharePreview");
+if(sharePreview){
+ sharePreview.addEventListener("click",(e)=>{
+  if(e.target.id==="sharePreview"){
+   closeSharePreview();
+  }
+ });
 }
 const watcherBtn = document.getElementById("watcherBtn");
 watcherBtn.addEventListener("pointerdown", watcherPointerDown);
