@@ -693,39 +693,40 @@ body.collapse-state .footerKey{
   <div class="helpBox">
     <div class="buttons" style="float:right"><button id="closeHelp">close</button></div>
     <h1>inducta</h1>
-<h2>rules</h2>
-
 <h3>economy</h3>
 <ul>
-<li><span class="eco">R</span> becomes <span class="eco">F</span> or <span class="eco">C0</span> instantly</li>
-<li><span class="eco">C0→C1→C2</span> grows over time</li>
-<li><span class="eco">F→f→gone</span> fades over time</li>
+<li><span class="eco">R</span> becomes <span class="flareToken">F</span> or <span class="chargeToken">C0</span> instantly</li>
+<li><span class="chargeToken">C0→C1→C2</span> grows over time</li>
+<li><span class="flareToken">F→f→gone</span> fades over time</li>
 </ul>
 
 <h3>power</h3>
 <ul>
-<li><span class="eco">C1</span>, <span class="eco">f</span> = normal</li>
-<li><span class="eco">C2</span>, <span class="eco">F</span> = strong</li>
+<li><span class="chargeToken">C1</span>, <span class="flareToken">f</span> = normal</li>
+<li><span class="chargeToken">C2</span>, <span class="flareToken">F</span> = strong</li>
 <li>normal = 1 damage</li>
 <li>strong = 2 damage</li>
 </ul>
 
 <h3>combatants</h3>
 <ul>
-<li><span class="arb">A</span> fires in a direction</li>
-<li><span class="lat">L</span> attacks over time</li>
-<li><span class="exe">E</span> crushes eco</li>
+<li><span class="arb">A</span> locks then fires, only targetable when locked</li>
+<li><span class="lat">L</span> targets far eco first</li>
+<li><span class="exe">E</span> advances toward and destroys eco, turns right when blocked</li>
 <li><span class="arb">+</span> = elite</li>
 <li><span class="arb">++</span> = boss</li>
 <li><span class="arb">*</span> = next shift</li>
 <li><span class="arb">**</span> = two shifts</li>
 </ul>
 
-<h3>pressure</h3>
+<h3>shift order</h3>
 <ul>
-<li>projectiles weaken charge: <span class="eco">C2→C1→C0→gone</span></li>
-<li><span class="exe">E+</span> needs 2 damage to breach</li>
-<li><span class="exe">E++</span> needs 3 damage to breach</li>
+<li><span class="eco">R</span> <span class="chargeToken">C</span> <span class="flareToken">F</span> grow / fade</li>
+<li><span class="arb">A</span> locks / fires</li>
+<li><span class="lat">L</span> marks / attacks</li>
+<li><span class="exe">E</span> moves / destroys</li>
+<li>pressure enters</li>
+<li>collapse checks</li>
 </ul>
 
 <h3>flow</h3>
@@ -737,7 +738,7 @@ body.collapse-state .footerKey{
 </ul>
 
 <h3>collapse</h3>
-<p>full board + incoming pressure = collapse</p>
+<p>full board + incoming pressure</p>
 
 
   </div>
@@ -799,7 +800,7 @@ function newGame(message="plane is empty", seedOverride=null){
  const runSeed = Number.isFinite(parsedSeed) ? (parsedSeed >>> 0) : Math.floor(Math.random()*1000000000);
  game = {
   board: {},
-  turn: 1,
+  turn: 0,
   last: message,
   spawnIndex: 0,
   spawnBag: [],
@@ -1938,8 +1939,8 @@ function rememberSpawn(turn, kind, tier){
 function baseSpawnCountForTurn(turnNumber=null){
  const t = turnNumber ?? game.turn;
 
- if(t===1) return 0;
- if(t===2) return 1;
+ if(t===0) return 0;
+ if(t===1) return 1;
 
  const roll = chanceFor(game.pressureSeed, t);
  const roll2 = chanceFor(game.pressureSeed + 31337, t);
@@ -2070,7 +2071,7 @@ function enterCollapse(reason){
  game.reviewing=true;
  game.collapseReason=reason;
  if(!collapseShareSnapshot){
-  collapseShareSnapshot = captureCollapseShareSnapshot();
+  collapseShareSnapshot = captureCollapseShareSnapshot(game.turn + 1);
  }
  return "collapse · " + reason;
 }
@@ -2143,7 +2144,7 @@ function shareColorKindForCell(c){
  return "empty";
 }
 
-function captureCollapseShareSnapshot(){
+function captureCollapseShareSnapshot(turnOverride=null){
  const board = {};
  for(const n of NUMS){
   const c = getCell(n);
@@ -2154,7 +2155,7 @@ function captureCollapseShareSnapshot(){
  }
  return {
   seed: game.runSeed,
-  turn: game.turn,
+  turn: turnOverride === null ? game.turn : turnOverride,
   cleared: game.clearedCount,
   board: board,
   line: "system collapse. observe."
