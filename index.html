@@ -1,4 +1,9 @@
 <!doctype html>
+<!--
+inducta
+a pressure and timing system
+still form - brian schafheimer
+-->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -39,29 +44,6 @@ body{display:flex;justify-content:center;align-items:center;padding:18px;touch-a
  max-width:62vw;
 }
 .buttons{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.debugButtons{
- display:grid;
- grid-template-columns:1fr 1fr;
- gap:8px 10px;
- row-gap:10px;
- justify-items:stretch;
- align-items:start;
-}
-.debugButtons button{width:100%;}
-.debugButtons .helpAction{
- color:#cfc9ff;
- border-color:#3a3650;
- background:#1a1930;
-}
-.debugButtons .debugLabel{
- grid-column:1 / span 2;
- text-align:center;
- font-size:10px;
- color:var(--muted);
- line-height:1;
- margin-top:-2px;
- opacity:.78;
-}
 button{background:#1a1a25;color:var(--text);border:1px solid #2c2a38;border-radius:10px;padding:9px 12px;font:inherit;font-size:13px;cursor:pointer;}
 button:active{transform:translateY(1px);background:#242434;}
 button.primary{border-color:#45405b;background:#202033;}
@@ -86,10 +68,6 @@ button.danger{border-color:#56303a;color:#ffb7b7;}
 .tile.empty{color:#34313d}
 
 .log{min-height:0;background:transparent;border:0;padding:4px 4px;font-size:12px;line-height:1.25;color:var(--dim);text-align:center;}
-.choicePanel{display:none!important;background:rgba(20,20,30,.97);border:1px solid #323044;border-radius:14px;padding:10px 12px;margin:12px 0;}
-.choicePanel.visible{display:block}
-.choiceTitle{font-size:13px;color:var(--muted);margin-bottom:9px;}
-.choiceBtns{display:flex;gap:8px;flex-wrap:wrap}
 .help{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10;padding:18px;overflow:auto;}
 .help.visible{display:block}
 .helpBox{max-width:680px;margin:20px auto;background:#101018;border:1px solid #2b2938;border-radius:18px;padding:18px;box-shadow:0 18px 60px rgba(0,0,0,.55);}
@@ -327,7 +305,7 @@ body.collapse-state .watcher.resetHold{
 }
 
 
-/* header polish: let mobile subtitle breathe without fighting debug buttons */
+/* header polish: let mobile subtitle breathe */
 @media (max-width:420px){
  .header{
   display:grid;
@@ -367,10 +345,6 @@ body.collapse-state .watcher.resetHold{
   grid-area:buttons;
   align-self:start;
  }
- .debugButtons{
-  gap:7px 8px;
-  row-gap:8px;
- }
  .buttons button{
   width:100%;
   padding:7px 8px;
@@ -379,15 +353,6 @@ body.collapse-state .watcher.resetHold{
  }
 }
 
-
-/* removed */ .globalWarning .status{border-color:rgba(180,220,90,.8);box-shadow:0 0 12px rgba(180,220,90,.35);}
-/* removed */ .globalDanger .status{border-color:rgba(255,80,80,.9);box-shadow:0 0 18px rgba(255,80,80,.6);}
-.globalDanger{animation:dangerPulse .6s ease-in-out infinite;}
-@keyframes dangerPulse{
- 0%{filter:brightness(1);}
- 50%{filter:brightness(1.15);}
- 100%{filter:brightness(1);}
-}
 
 
 .boardDanger #board{
@@ -429,13 +394,6 @@ body.collapse-state .tile.selected{
  box-shadow:none;
 }
 
-body.collapse-state .observeWrap{
- opacity:.92;
-}
-
-body.collapse-state .observeBtn{
- filter:saturate(.75) brightness(.92);
-}
 
 body.collapse-state #log{
  color:#8d93a1 !important;
@@ -445,6 +403,18 @@ body.collapse-state .footerKey{
  opacity:.45;
 }
 
+.headerSignature{
+ text-align:right;
+ font-size:10px;
+ color:var(--dim);
+ opacity:.52;
+ margin-top:5px;
+ padding-right:2px;
+ letter-spacing:.01em;
+ line-height:1.15;
+}
+
+
 </style>
 </head>
 <body>
@@ -452,29 +422,18 @@ body.collapse-state .footerKey{
  <div class="header">
   <div>
    <div class="title">inducta</div>
-   <div class="sub">tap to act<br>hold the system together</div>
+   <div class="sub">hold the system together</div>
   </div>
-  <div class="buttons debugButtons">
-   <button id="restartBtn" class="danger">restart</button>
-   <button id="helpBtn" class="helpAction">help</button>
-   <button id="undoBtn">undo</button>
-   <button id="redoBtn">redo</button>
-   <div class="debugLabel">debug</div>
+  <div>
+   <div class="buttons">
+    <button id="helpBtn">help</button>
+   </div>
+   <div class="headerSignature">still form - brian schafheimer</div>
   </div>
  </div>
 
  <div id="status" class="status"></div>
  <div id="board" class="board"></div>
-
- <div id="choicePanel" class="choicePanel">
-  <div id="choiceTitle" class="choiceTitle"></div>
-  <div class="choiceBtns">
-   <button id="makeFlare" class="primary">F now <span class="muted">(no turn cost)</span></button>
-   <button id="makeCharge" class="primary">C0 build <span class="muted">(no turn cost)</span></button>
-   <button id="cancelChoice">R</button>
-  </div>
- </div>
-
 
  <div class="watcherWrap">
   <div>
@@ -598,7 +557,7 @@ function cloneCell(c){ return cell(c.kind,c.value,c.hold,c.direction,c.target,c.
 
 let game;
 
-function newGame(message="plane is empty."){
+function newGame(message="plane is empty"){
  const runSeed = Math.floor(Math.random()*1000000000);
  game = {
   board: {},
@@ -619,7 +578,6 @@ function newGame(message="plane is empty."){
   collapseReason: "",
   collapseGrace: false,
   history: [],
-  redoStack: [],
   strongFlags: {
    charge_decayed:0, dead_charge_cleared:0, flare_expired:0,
    latcher_regressed:0, eco_destroyed:0, wasted_touch:0, cancelled_power:0
@@ -663,13 +621,12 @@ function cloneGameState(){
 function pushUndo(){
  game.history.push(cloneGameState());
  if(game.history.length>50) game.history.shift();
- game.redoStack = [];
 }
 function restoreGameState(state){
  game.board = {};
  for(const n of NUMS) game.board[n] = cloneCell(state.board[n]);
  game.turn = state.turn;
- game.last = "Rolled back one action.";
+ game.last = "rolled back one action";
  game.spawnIndex = state.spawnIndex;
  game.spawnBag = [...state.spawnBag];
  game.plannedSpawn = state.plannedSpawn ? {...state.plannedSpawn} : null;
@@ -687,36 +644,6 @@ function restoreGameState(state){
  game.mode = state.mode;
  game.selected = state.selected;
  game.targetPower = state.targetPower;
-}
-function undoOneAction(){
- if(!game.history.length){
-  game.last = "Nothing to undo.";
-  render();
-  return;
- }
- game.redoStack.push(cloneGameState());
- if(game.redoStack.length>50) game.redoStack.shift();
- const state = game.history.pop();
- restoreGameState(state);
- game.mode = "normal";
- game.selected = "";
- game.targetPower = undefined;
- render();
-}
-function redoOneAction(){
- if(!game.redoStack.length){
-  game.last = "Nothing to redo.";
-  render();
-  return;
- }
- game.history.push(cloneGameState());
- if(game.history.length>50) game.history.shift();
- const state = game.redoStack.pop();
- restoreGameState(state);
- game.mode = "normal";
- game.selected = "";
- game.targetPower = undefined;
- render();
 }
 function emptyTiles(){ return NUMS.filter(n=>getCell(n).kind==="empty"); }
 function ecoTiles(){ return NUMS.filter(n=>ECO_KINDS.has(getCell(n).kind)); }
@@ -744,7 +671,7 @@ function powerSummaryPlain(n){
 function powerHint(){
  const p = powerTiles();
  if(!p.length) return "";
- return " Use " + p.map(powerSummaryPlain).join(" or ") + ".";
+ return " use " + p.map(powerSummaryPlain).join(" or ");
 }
 function strongSummary(){
  const f = game.strongFlags;
@@ -1122,7 +1049,7 @@ function render(){
    }
    if(e.target.closest(".rootCancel")){
     game.mode="normal"; game.selected="";
-    game.last=`<span class="releaseText">root released.</span>`;
+    game.last=`<span class="releaseText">root released</span>`;
     render();
     e.stopPropagation();
     return;
@@ -1135,13 +1062,6 @@ function render(){
  const log = document.getElementById("log");
  log.innerHTML = game.last || `<span class="muted">plane is empty</span>`;
 
- const choicePanel = document.getElementById("choicePanel");
- if(game.mode==="rootChoice"){
-  choicePanel.classList.add("visible");
-  document.getElementById("choiceTitle").innerHTML = `Root at ${game.selected}: choose F or C0 <span class="good">(free — no time passes)</span>`;
- } else {
-  choicePanel.classList.remove("visible");
- }
  updateWatcherPulse();
 }
 
@@ -1228,7 +1148,7 @@ function passTime(){
 
 function rewindCollapseWithWatcher(){
  if(!game.history.length){
-  game.last = "No earlier state remains.";
+  game.last = "no earlier state remains";
   render();
   return;
  }
@@ -1245,7 +1165,7 @@ function rewindCollapseWithWatcher(){
 
 function tapTile(n){
  if(game.collapsed){
-  game.last = game.reviewing ? "Watcher can rewind the collapse." : "The board is past control. Restart when ready.";
+  game.last = game.reviewing ? "observe backward" : "hold observe for another";
   render();
   return;
  }
@@ -1253,7 +1173,7 @@ function tapTile(n){
  if(game.mode==="rootChoice"){
   if(n!==game.selected){
    game.mode="normal"; game.selected="";
-   game.last=`<span class="releaseText">root released.</span>`;
+   game.last=`<span class="releaseText">root released</span>`;
    render();
    return;
   }
@@ -1266,7 +1186,7 @@ function tapTile(n){
   if(n===source){
    game.mode="normal";
    game.selected="";
-   game.last = `<span class="releaseText">${source}: ${tokenFor(source)} released — no turn spent.</span>`;
+   game.last = `<span class="releaseText">${source}: ${tokenFor(source)} released · no turn spent</span>`;
    render();
    return;
   }
@@ -1275,7 +1195,7 @@ function tapTile(n){
   if(!action){
    game.mode="normal";
    game.selected="";
-   game.last = `${source}: ${tokenFor(source)} selected. no effect`;
+   game.last = `${source}: ${tokenFor(source)} released · no effect`;
    render();
    return;
   }
@@ -1286,35 +1206,35 @@ function tapTile(n){
  }
 
  const actions = validActionsFor(n);
- if(!actions.length){ game.strongFlags.wasted_touch++; game.last="No valid action."; render(); return; }
+ if(!actions.length){ game.strongFlags.wasted_touch++; game.last="no valid action"; render(); return; }
 
  const action = actions[0][0];
  if(action==="root"){
   pushUndo();
   setCell(n, cell("root"));
   const msgs = resolveWorld(n, "root", n);
-  game.last = joinFirst(`${n}: Empty -> Root`, msgs);
+  game.last = joinFirst(`${n}: empty -> R`, msgs);
   game.turn++;
   render();
   return;
  }
  if(action==="flare" || action==="charge"){
-  game.mode="rootChoice"; game.selected=n; game.last=`${n}: Root selected. Choose F or C0 — free, no time passes.`;
+  game.mode="rootChoice"; game.selected=n; game.last=`${n}: root selected · choose F or C0 · free`;
   render();
   return;
  }
  if(action==="use_strong"){
-  game.mode="targeting"; game.selected=n; game.targetPower=2; game.last=`${n}: ${tokenFor(n)} selected. Tap target.`;
+  game.mode="targeting"; game.selected=n; game.targetPower=2; game.last=`${n}: ${tokenFor(n)} selected · choose target`;
   render();
   return;
  }
  if(action==="use_normal_charge"){
-  game.mode="targeting"; game.selected=n; game.targetPower=1; game.last=`${n}: ${tokenFor(n)} selected. Tap target.`;
+  game.mode="targeting"; game.selected=n; game.targetPower=1; game.last=`${n}: ${tokenFor(n)} selected · choose target`;
   render();
   return;
  }
  if(action==="charge_building"){
-  game.last=`${n}: C0 is building. No power yet.`;
+  game.last=`${n}: C0 building · no power yet`;
   render();
   return;
  }
@@ -1322,7 +1242,7 @@ function tapTile(n){
   game.mode="targeting";
   game.selected=n;
   game.targetPower=action==="use_flare" ? Math.max(1, getCell(n).value) : 1;
-  game.last=`${n}: ${action==="use_flare"?tokenFor(n):"C1"} selected. Tap target.`;
+  game.last=`${n}: ${action==="use_flare"?tokenFor(n):"C1"} selected · choose target`;
   render();
   return;
  }
@@ -1337,7 +1257,7 @@ function tapTile(n){
   return;
  }
  if(action==="needs_power"){
-  game.last = `${n}: Needs C2/C1/F power first.` + powerHint() + ` No turn spent.`;
+  game.last = `${n}: needs C2/C1/F first` + powerHint() + ` · no turn spent`;
   render();
   return;
  }
@@ -1349,23 +1269,15 @@ function convertRootChoice(n, choice){
  pushUndo();
  if(choice==="flare"){
   setCell(n, cell("flare",2));
-  game.last = `${n}: Root + Ledger -> Flare. Power now: ${n}:F now`;
+  game.last = `${n}: R -> F`;
  } else if(choice==="charge"){
   setCell(n, cell("charge",0));
-  game.last = `${n}: Root + Vortex -> Charge C0. Builds over time.`;
+  game.last = `${n}: R -> C0`;
  }
  game.mode="normal";
  game.selected="";
  render();
 }
-
-document.getElementById("makeFlare").onclick = () => { convertRootChoice(game.selected, "flare"); };
-document.getElementById("makeCharge").onclick = () => { convertRootChoice(game.selected, "charge"); };
-document.getElementById("cancelChoice").onclick = () => {
- game.mode="normal"; game.selected="";
- game.last=`<span class="releaseText">root released.</span>`;
- render();
-};
 
 function applyPoweredAction(targetN, action, power){
  const c = getCell(targetN);
@@ -1389,16 +1301,16 @@ function applyPoweredAction(targetN, action, power){
    setCell(targetN,cell());
    return `${targetN}: A* resolved`;
   }
-  game.strongFlags.wasted_touch++; return `${targetN}: Arbiter timing failed`;
+  game.strongFlags.wasted_touch++; return `${targetN}: arbiter timing failed`;
  }
- if(action==="bad_arbiter"){ game.strongFlags.wasted_touch++; return `${targetN}: A inactive; timing was poor`; }
+ if(action==="bad_arbiter"){ game.strongFlags.wasted_touch++; return `${targetN}: A inactive · timing failed`; }
  if(action==="progress_latcher"){
-  if(c.kind!=="latcher"){ game.strongFlags.wasted_touch++; return `${targetN}: no Latcher result`; }
+  if(c.kind!=="latcher"){ game.strongFlags.wasted_touch++; return `${targetN}: no latcher result`; }
   const damage = power>=2 ? 2 : 1;
   const nextValue = c.value - damage;
-  if(nextValue <= 0){ game.clearedCount++; setCell(targetN,cell()); return `${targetN}: Latcher completed`; }
+  if(nextValue <= 0){ game.clearedCount++; setCell(targetN,cell()); return `${targetN}: latcher resolved`; }
   setCell(targetN, cell("latcher", nextValue, 1, c.direction, c.target, c.timer, c.tier||0, c.phase||0));
-  return `${targetN}: Latcher damaged to L${nextValue}`;
+  return `${targetN}: latcher -> L${nextValue}`;
  }
  if(action==="breach_executor"){
   const tier = c.tier || 0;
@@ -1406,7 +1318,7 @@ function applyPoweredAction(targetN, action, power){
   const damage = power>=2 ? 2 : 1;
   const remaining = Math.max(0, required - damage);
   setCell(targetN, cell("executor_breached",remaining,0,c.direction,c.target,c.target ? 1 : 0,tier,0));
-  return `${targetN}: Executor breached E -> ${remaining>0 ? `e${remaining}` : "e"}`;
+  return `${targetN}: executor breached E -> ${remaining>0 ? `e${remaining}` : "e"}`;
  }
  if(action==="resolve_executor_from_closed"){
   const tier = c.tier || 0;
@@ -1416,10 +1328,10 @@ function applyPoweredAction(targetN, action, power){
   if(tier===0 && damage>=2){
     game.clearedCount++;
     setCell(targetN, cell());
-    return `${targetN}: Executor resolved`;
+    return `${targetN}: executor resolved`;
   }
   setCell(targetN, cell("executor_breached",remaining,0,c.direction,c.target,c.target ? 1 : 0,tier,0));
-  return `${targetN}: Executor breached E -> ${remaining>0 ? `e${remaining}` : "e"}`;
+  return `${targetN}: executor breached E -> ${remaining>0 ? `e${remaining}` : "e"}`;
  }
  if(action==="resolve_executor"){
   const damage = power>=2 ? 2 : 1;
@@ -1427,13 +1339,13 @@ function applyPoweredAction(targetN, action, power){
   if(remaining<=0){
    game.clearedCount++;
    setCell(targetN,cell());
-   return `${targetN}: Executor resolved`;
+   return `${targetN}: executor resolved`;
   }
   setCell(targetN, cell("executor_breached",remaining,0,c.direction,c.target,c.timer,c.tier||0,0));
-  return `${targetN}: Executor damaged to e${remaining}`;
+  return `${targetN}: executor -> e${remaining}`;
  }
  if(action==="miss_power"){ game.strongFlags.wasted_touch++; return `${targetN}: power found no result`; }
- game.strongFlags.wasted_touch++; return "Unknown powered action";
+ game.strongFlags.wasted_touch++; return "unknown powered action";
 }
 function consumePowerTileAndApply(sourceN, action, targetN, power){
  pushUndo();
@@ -1446,7 +1358,7 @@ function consumePowerTileAndApply(sourceN, action, targetN, power){
  let message = applyPoweredAction(targetN, action, power);
  const msgs = resolveWorld(sourceN, action, targetN);
  let sourceLabel = sourceCell.kind==="charge" ? `C${sourceCell.value}` : tokenForSource(sourceCell);
- game.last = joinFirst(`${sourceN}: ${sourceLabel} used -> ${message}`, msgs);
+ game.last = joinFirst(`${sourceN}: ${sourceLabel} -> ${message}`, msgs);
  game.turn++;
 }
 
@@ -1557,7 +1469,7 @@ function destroyEco(n, reason){
  if(!ECO_KINDS.has(getCell(n).kind)) return null;
  setCell(n, cell());
  game.strongFlags.eco_destroyed++;
- return `${reason}: ${n} eco destroyed`;
+ return `${reason}: ${n} eco gone`;
 }
 
 function damageEcoByProjectile(n, reason){
@@ -1568,26 +1480,26 @@ function damageEcoByProjectile(n, reason){
   if(c.value<=0){
    setCell(n, cell());
    game.strongFlags.eco_destroyed++;
-   return `${reason}: ${n} C0 destroyed`;
+   return `${reason}: ${n} C0 gone`;
   }
   setCell(n, cell("charge", c.value-1));
   game.strongFlags.eco_destroyed++;
-  return `${reason}: ${n} C${c.value} damaged to C${c.value-1}`;
+  return `${reason}: ${n} C${c.value} -> C${c.value-1}`;
  }
 
  if(c.kind==="charge_dead"){
   setCell(n, cell());
   game.strongFlags.eco_destroyed++;
-  return `${reason}: ${n} C0 destroyed`;
+  return `${reason}: ${n} C0 gone`;
  }
 
  if(c.kind==="flare"){
-  return `${reason}: ${n} flare ignored`;
+  return `${reason}: ${n} flare holds`;
  }
 
  setCell(n, cell());
  game.strongFlags.eco_destroyed++;
- return `${reason}: ${n} eco destroyed`;
+ return `${reason}: ${n} eco gone`;
 }
 function resolveArbiterPressure(){
  const messages = [];
@@ -1659,19 +1571,19 @@ function resolveExecutorPressure(){
   if(c.target){
    if(c.kind==="executor_breached" && c.timer>0){
     c.timer--;
-    messages.push(`${n}: e**${DIR_GLYPHS[c.direction]} bearing down on ${c.target}`);
+    messages.push(`${n}: e**${DIR_GLYPHS[c.direction]} bears on ${c.target}`);
     continue;
    }
    const target = c.target;
    if(ECO_KINDS.has(getCell(target).kind)){
     const msg=destroyEco(target,`${n}: Executor crush`); if(msg) messages.push(msg);
-   } else messages.push(`${n}: Executor crush found no eco at ${target}`);
+   } else messages.push(`${n}: executor crush found no eco at ${target}`);
    const cur = getCell(n);
    if(["executor","executor_breached"].includes(cur.kind)){ cur.target=""; cur.timer=0; }
    continue;
   }
   const front = forwardTile(n,c.direction);
-  if(front===null){ c.direction=(c.direction+1)%4; messages.push(`${n}: Executor turned right`); continue; }
+  if(front===null){ c.direction=(c.direction+1)%4; messages.push(`${n}: executor turned right`); continue; }
   const fc = getCell(front);
   if(ECO_KINDS.has(fc.kind)){
    c.target=front;
@@ -1681,16 +1593,16 @@ function resolveExecutorPressure(){
   }
   if(COMBATANT_KINDS.has(fc.kind)){
    c.direction=(c.direction+1)%4;
-   messages.push(`${n}: Executor blocked by combatant, turned right`);
+   messages.push(`${n}: executor blocked · turned right`);
    continue;
   }
   if(fc.kind==="empty"){
    setCell(front, cell(c.kind,c.value,c.hold,c.direction,c.target,c.timer,c.tier||0,c.phase||0));
    setCell(n, cell());
-   messages.push(`${n}->${front}: Executor moved`);
+   messages.push(`${n}->${front}: executor moved`);
    continue;
   }
-  c.direction=(c.direction+1)%4; messages.push(`${n}: Executor blocked, turned right`);
+  c.direction=(c.direction+1)%4; messages.push(`${n}: executor blocked · turned right`);
  }
  return messages;
 }
@@ -1862,15 +1774,15 @@ function collapseIfNeeded(){
  const nextTurn = game.turn + 1;
 
  if(!ecoTiles().length){
-  return enterCollapse("system collapse. observe.");
+  return enterCollapse("system collapse · observe");
  }
 
  if(game.spawningEnabled && spawnCountForTurn(nextTurn)>0){
   if(game.collapseGrace){
-   return enterCollapse(`Board is full; enemy pressure is scheduled for turn ${nextTurn}.`);
+   return enterCollapse(`board is full · pressure arrives turn ${nextTurn}`);
   }
   game.collapseGrace = true;
-  return "Collapse warning: make space now.";
+  return "collapse warning · make space now";
  }
 
  return null;
@@ -1879,7 +1791,7 @@ function enterCollapse(reason){
  game.collapsed=true;
  game.reviewing=true;
  game.collapseReason=reason;
- return "Collapse: " + reason;
+ return "collapse · " + reason;
 }
 
 function nextSpawnKind(){
@@ -1923,15 +1835,15 @@ function maybeSpawnCombatant(){
   rememberSpawn(game.turn, spawnKind, tier);
   if(spawnKind==="latcher"){
    setCell(spawnTile, cell("latcher", tier===2?4:(tier===1?3:2),0,1,"",0,tier,0));
-   messages.push(`${spawnTile}: Latcher appeared`);
+   messages.push(`${spawnTile}: latcher appeared`);
   }
   else if(spawnKind==="arbiter"){
    setCell(spawnTile, cell("arbiter",0,0,direction,"",0,tier,0));
-   messages.push(`${spawnTile}: Arbiter appeared`);
+   messages.push(`${spawnTile}: arbiter appeared`);
   }
   else if(spawnKind==="executor"){
    setCell(spawnTile, cell("executor", tier===2?4:(tier===1?3:2),0,direction,"",0,tier,0));
-   messages.push(`${spawnTile}: Executor appeared ${DIR_GLYPHS[direction]}`);
+   messages.push(`${spawnTile}: executor appeared ${DIR_GLYPHS[direction]}`);
   }
 
  }
@@ -1969,7 +1881,7 @@ function completeWatcherReset(){
  watcherHoldTimer = null;
  watcherResetTriggered = true;
  clearWatcherHoldVisual();
- newGame("plane is empty.");
+ newGame("plane is empty");
 }
 
 function watcherPointerDown(e){
@@ -2025,16 +1937,6 @@ function watcherPointerCancel(e){
  if(watcherPointerId !== null && e.pointerId !== watcherPointerId) return;
  cancelWatcherHold();
 }
-
-document.getElementById("restartBtn").onclick = () => {
- newGame("Restarted by choice.");
-};
-document.getElementById("undoBtn").onclick = () => {
- undoOneAction();
-};
-document.getElementById("redoBtn").onclick = () => {
- redoOneAction();
-};
 const watcherBtn = document.getElementById("watcherBtn");
 watcherBtn.addEventListener("pointerdown", watcherPointerDown);
 watcherBtn.addEventListener("pointerup", watcherPointerUp);
@@ -2045,14 +1947,6 @@ document.getElementById("closeHelp").onclick = () => document.getElementById("he
 document.getElementById("help").addEventListener("click",(e)=>{ if(e.target.id==="help") document.getElementById("help").classList.remove("visible"); });
 
 newGame();
-
-function redo(){
- if(!game.redoStack.length) return;
- const next = game.redoStack.pop();
- game.history.push(JSON.stringify(game));
- Object.assign(game, JSON.parse(next));
- render();
-}
 
 </script>
 </body>
