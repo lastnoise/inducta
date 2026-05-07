@@ -738,7 +738,7 @@ body.collapse-state .footerKey{
 </ul>
 
 <h3>collapse</h3>
-<p>full board + incoming pressure</p>
+<p>incoming pressure cannot enter</p>
 
 
   </div>
@@ -1090,13 +1090,33 @@ function ensurePlannedSpawns(){
  const reserved = new Set();
 
  for(let i=0;i<spawnCount;i++){
-  const laneChoice = chooseIngressLane(reserved, i);
-  if(!laneChoice) break;
+  let laneChoice = chooseIngressLane(reserved, i);
+  let ingressIndex = -1;
+  let ingress = null;
+  let ingressLane = "blocked";
+  let previewTiles = [];
+  let previewDir = "";
+  let spawnTile = "";
+
+  if(laneChoice){
+   ingressIndex = laneChoice.ingressIndex;
+   ingress = laneChoice.ingress;
+   ingressLane = laneChoice.lane;
+   previewTiles = laneChoice.previewTiles;
+   previewDir = laneChoice.previewDir;
+   spawnTile = chooseTileFromCandidates(laneChoice.candidates, i, 22222);
+   if(spawnTile) reserved.add(spawnTile);
+  } else {
+   // Previews describe scheduled incoming pressure, even when
+   // there is currently no valid tile for it to occupy.
+   // Collapse still only happens later, when pressure attempts entry.
+   ingressIndex = deterministicIngressOrder(i)[0];
+   ingress = INGRESS_LANES[ingressIndex];
+   previewTiles = ingress.primary;
+   previewDir = ingress.previewDir;
+  }
 
   const spawnKind = plannedSpawnKindForSlot(i);
-  const spawnTile = chooseTileFromCandidates(laneChoice.candidates, i, 22222);
-  reserved.add(spawnTile);
-
   const tier = rollTier(game.turn);
   const direction = plannedDirectionForSlot(i);
 
@@ -1106,11 +1126,11 @@ function ensurePlannedSpawns(){
    tile: spawnTile,
    tier: tier,
    direction: direction,
-   ingressIndex: laneChoice.ingressIndex,
-   ingressName: laneChoice.ingress.name,
-   ingressLane: laneChoice.lane,
-   previewTiles: laneChoice.previewTiles,
-   previewDir: laneChoice.previewDir
+   ingressIndex: ingressIndex,
+   ingressName: ingress ? ingress.name : "blocked",
+   ingressLane: ingressLane,
+   previewTiles: previewTiles,
+   previewDir: previewDir
   });
  }
 
@@ -1141,71 +1161,22 @@ function pressurePreview(){
 }
 
 function incomingSpawnCanCollapse(){
- const incoming = spawnCountForTurn(game.turn);
- if(incoming <= 0) return false;
- if(emptyTiles().length > incoming) return false;
- if(!ecoTiles().length) return true;
- return game.spawningEnabled && spawnCountForTurn(game.turn + 1) > 0;
+ if(!boardIsFull()) return false;
+ const preview = pressurePreview();
+ return Object.keys(preview).length > 0;
 }
 
 
 function dangerStateFromEmptyCount(emptyCount, spawnCountNow, spawnCountNext){
- const afterSpawn = Math.max(0, emptyCount - spawnCountNow);
-
- // Red: current visible pressure can collapse the board.
- if(afterSpawn <= 0 && spawnCountNext > 0) return "danger";
+ // Red means only this:
+ // board full + visible incoming ingress pressure.
+ if(incomingSpawnCanCollapse()) return "danger";
 
  return "";
 }
 
 function boardDangerState(){
- const currentSpawn = spawnCountForTurn(game.turn);
- const nextSpawn = spawnCountForTurn(game.turn + 1);
- const emptyCount = emptyTiles().length;
-
- // Red: the board is in collapse grace, or raw spawn math says the next shift can kill.
- if(game.collapseGrace) return "danger";
-
- const currentState = dangerStateFromEmptyCount(emptyCount, currentSpawn, nextSpawn);
- if(currentState==="danger") return "danger";
-
- // Red-only pressure read. This preserves collapse danger without a vague warning layer.
- let pressure = 0;
-
- for(const n of NUMS){
-  const c = getCell(n);
-
-  if(c.kind==="arbiter" && c.value===1){
-   for(const d of arbiterDirections(n,c)){
-    const hit = firstArbiterHitInDirection(n,d);
-    if(hit && hit.kind==="eco") pressure += 1.25;
-   }
-  }
-
-  if(c.kind==="latcher" && c.target){
-   pressure += c.timer>0 ? 0.75 : 1.5;
-  }
-
-  if(c.kind==="executor" || c.kind==="executor_breached"){
-   if(c.target){
-    pressure += (c.kind==="executor_breached" && c.timer>0) ? 1.25 : 2.0;
-   } else {
-    const front = forwardTile(n,c.direction);
-    if(front && ECO_KINDS.has(getCell(front).kind)){
-     pressure += 1.5; // about to load
-    } else if(front && getCell(front).kind==="empty"){
-     pressure += 0.5; // lane pressure / space claim
-    }
-   }
-  }
- }
-
- const afterSpawn = Math.max(0, emptyCount - currentSpawn);
- const effectiveSpace = afterSpawn - pressure;
-
- if(effectiveSpace <= 0 && emptyCount <= 2) return "danger";
-
- return "";
+ return dangerStateFromEmptyCount(0,0,0);
 }
 
 
@@ -2045,25 +2016,10 @@ function boardIsFull(){ return emptyTiles().length===0; }
 function collapseIfNeeded(){
  if(game.collapsed) return null;
 
- if(!boardIsFull()){
-  game.collapseGrace = false;
-  return null;
- }
+ game.collapseGrace = false;
 
- const nextTurn = game.turn + 1;
-
- if(!ecoTiles().length){
-  return enterCollapse("system collapse · observe");
- }
-
- if(game.spawningEnabled && spawnCountForTurn(nextTurn)>0){
-  if(game.collapseGrace){
-   return enterCollapse(`board is full · pressure arrives turn ${nextTurn}`);
-  }
-  game.collapseGrace = true;
-  return "collapse imminent";
- }
-
+ // Collapse is only caused by physical overflow:
+ // incoming pressure attempts to enter and no valid ingress tile exists.
  return null;
 }
 function enterCollapse(reason){
@@ -2093,9 +2049,13 @@ function maybeSpawnCombatant(){
  const spawnedTiles = new Set();
 
  for(let i=0;i<spawnCount;i++){
-  if(!emptyTiles().length) break;
-
   const plan = plans.length > i ? plans[i] : null;
+
+  if(!emptyTiles().length){
+   game.plannedSpawn = null;
+   game.plannedSpawns = [];
+   return enterCollapse("pressure overflow · system collapsed");
+  }
 
   const spawnKind = plan ? plan.kind : nextSpawnKind();
   let spawnTile = plan ? plan.tile : "";
@@ -2104,10 +2064,22 @@ function maybeSpawnCombatant(){
   const direction = plan ? plan.direction : Math.floor(game.rng()*4);
 
   if(!spawnTile || getCell(spawnTile).kind!=="empty" || spawnedTiles.has(spawnTile)){
-   const laneChoice = plan ? laneChoiceForIngress(plan.ingressIndex, spawnedTiles) : chooseIngressLane(spawnedTiles, i);
-   if(!laneChoice || !laneChoice.candidates.length){
-    continue;
+   let laneChoice = null;
+
+   if(plan){
+    laneChoice = laneChoiceForIngress(plan.ingressIndex, spawnedTiles);
    }
+
+   if(!laneChoice || !laneChoice.candidates.length){
+    laneChoice = chooseIngressLane(spawnedTiles, i);
+   }
+
+   if(!laneChoice || !laneChoice.candidates.length){
+    game.plannedSpawn = null;
+    game.plannedSpawns = [];
+    return enterCollapse("pressure overflow · system collapsed");
+   }
+
    spawnTile = chooseTileFromCandidates(laneChoice.candidates, i, 55555);
   }
 
