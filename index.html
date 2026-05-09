@@ -235,7 +235,7 @@ body.collapse-state .shareCollapseWrap{
 }
 
 body.collapse-state .watcher.resetHold{
- animation:watcherResetCharge 3s linear forwards;
+ animation:watcherResetCharge 1.25s linear forwards;
  transform-origin:center center;
 }
 @keyframes watcherResetCharge{
@@ -711,8 +711,8 @@ body.collapse-state .footerKey{
 <h3>combatants</h3>
 <ul>
 <li><span class="arb">A</span> locks then fires, only targetable when locked</li>
-<li><span class="lat">L</span> targets far eco first</li>
-<li><span class="exe">E</span> advances toward and destroys eco, turns right when blocked</li>
+<li><span class="lat">L</span> arcs, only hits eco two tiles away</li>
+<li><span class="exe">E</span> moves toward eco, turns right when blocked</li>
 <li><span class="arb">+</span> = elite</li>
 <li><span class="arb">++</span> = boss</li>
 <li><span class="arb">*</span> = next shift</li>
@@ -723,7 +723,7 @@ body.collapse-state .footerKey{
 <ul>
 <li><span class="eco">R</span> <span class="chargeToken">C</span> <span class="flareToken">F</span> grow / fade</li>
 <li><span class="arb">A</span> locks / fires</li>
-<li><span class="lat">L</span> marks / attacks</li>
+<li><span class="lat">L</span> loads / attacks</li>
 <li><span class="exe">E</span> moves / destroys</li>
 <li>pressure enters</li>
 <li>collapse checks</li>
@@ -731,7 +731,7 @@ body.collapse-state .footerKey{
 
 <h3>flow</h3>
 <ul>
-<li>build&nbsp;power&nbsp;→&nbsp;spend&nbsp;power&nbsp;→&nbsp;world&nbsp;shifts</li>
+<li>build power · spend power · survive the shift</li>
 <li>observe to advance time</li>
 <li>observe in collapse to learn</li>
 <li>hold observe in collapse to begin again</li>
@@ -808,7 +808,6 @@ function newGame(message="plane is empty", seedOverride=null){
   plannedSpawns: [],
   spawnHistory: [],
   runSeed,
-  rng: mulberry32(runSeed),
   pressureSeed: runSeed,
   spawningEnabled: true,
   clearedCount: 0,
@@ -843,7 +842,6 @@ function cloneGameState(){
   plannedSpawn: game.plannedSpawn ? {...game.plannedSpawn} : null,
   plannedSpawns: game.plannedSpawns ? game.plannedSpawns.map(s => ({...s})) : [],
   spawnHistory: game.spawnHistory.map(s => ({...s})),
-  rng: game.rng,
   pressureSeed: game.pressureSeed,
   spawningEnabled: game.spawningEnabled,
   clearedCount: game.clearedCount,
@@ -871,7 +869,6 @@ function restoreGameState(state){
  game.plannedSpawn = state.plannedSpawn ? {...state.plannedSpawn} : null;
  game.plannedSpawns = state.plannedSpawns ? state.plannedSpawns.map(s => ({...s})) : [];
  game.spawnHistory = state.spawnHistory ? state.spawnHistory.map(s => ({...s})) : [];
- game.rng = state.rng;
  game.pressureSeed = state.pressureSeed;
  game.spawningEnabled = state.spawningEnabled;
  game.clearedCount = state.clearedCount;
@@ -953,8 +950,9 @@ function tokenFor(n){
  }
  if(c.kind==="latcher"){
   let ranged = "";
-  if(c.target){
-   ranged = c.timer>0 ? `**${DIR_GLYPHS[c.direction]}` : `*${DIR_GLYPHS[c.direction]}`;
+  if(c.phase===1){
+   const starCount = Math.max(1, (c.timer || 0) + 1);
+   ranged = `${"*".repeat(starCount)}${DIR_GLYPHS[c.direction]}`;
   }
   return c.value===0 ? `L${ranged}` : `L${c.value}${ranged}`;
  }
@@ -989,13 +987,41 @@ function maxLatcherVitality(tier){
 }
 
 
-function firstWorldMessage(messages){
+function finalBoardMessage(messages){
  if(!messages || !messages.length) return "";
- return messages[0];
+
+ const joined = messages.join(" | ");
+
+ if(joined.includes("pressure overflow · system collapsed")){
+  return "pressure overflow · system collapsed";
+ }
+
+ const events = [];
+ for(const message of messages){
+  for(const part of String(message).split(" | ")){
+   const trimmed = part.trim();
+   if(trimmed) events.push(trimmed);
+  }
+ }
+
+ const lowPriorityFragments = [
+  "found no eco",
+  "found no tile",
+  "blocked",
+  "no earlier state remains",
+  "appeared"
+ ];
+
+ const visibleEvents = events.filter(event => {
+  return !lowPriorityFragments.some(fragment => event.includes(fragment));
+ });
+
+ const source = visibleEvents.length ? visibleEvents : events;
+ return source.length ? source[source.length - 1] : "";
 }
 function joinFirst(base, messages){
- const first = firstWorldMessage(messages);
- return first ? `${base} · ${first}` : base;
+ const final = finalBoardMessage(messages);
+ return final ? `${base} · ${final}` : base;
 }
 
 
@@ -1713,7 +1739,10 @@ function chooseDirectionWithEco(n, preferFurthest){
  if(!options.length) return getCell(n).direction;
  let bestDistance = preferFurthest ? Math.max(...options.map(o=>o[1])) : Math.min(...options.map(o=>o[1]));
  const best = options.filter(o=>o[1]===bestDistance).map(o=>o[0]);
- return best[Math.floor(game.rng()*best.length)];
+ const tileSalt = Number.parseInt(n,10) * 2017;
+ const modeSalt = preferFurthest ? 91919 : 31313;
+ const roll = chanceFor(game.pressureSeed + tileSalt + modeSalt, game.turn);
+ return best[Math.floor(roll * best.length)];
 }
 function destroyEco(n, reason){
  if(!ECO_KINDS.has(getCell(n).kind)) return null;
@@ -1756,18 +1785,24 @@ function resolveArbiterPressure(){
  for(const n of NUMS){
   const c = getCell(n);
   if(c.kind!=="arbiter") continue;
+
   if(c.value===1){
-   for(const direction of arbiterDirections(n,c)){
+   const firingDirections = arbiterDirections(n, cloneCell(c));
+   for(const direction of firingDirections){
     const hit = firstArbiterHitInDirection(n,direction);
     if(hit && hit.kind==="eco"){
-     const msg=damageEcoByProjectile(hit.tile,`${n}: A*${DIR_GLYPHS[direction]} fired`);
+     const msg = damageEcoByProjectile(hit.tile,`${n}: A*${DIR_GLYPHS[direction]} fired`);
      if(msg) messages.push(msg);
     } else if(hit && hit.kind==="combatant"){
      messages.push(`${n}: A*${DIR_GLYPHS[direction]} blocked`);
     }
    }
-   setCell(n, cell("arbiter",0,0,c.direction,"",0,c.tier||0,c.phase||0));
-   messages.push(`${n}: A* -> A`);
+
+   const cur = getCell(n);
+   if(cur.kind==="arbiter"){
+    setCell(n, cell("arbiter",0,0,c.direction,"",0,c.tier||0,c.phase||0));
+    messages.push(`${n}: A* -> A`);
+   }
   } else {
    const direction = chooseDirectionWithEco(n,false);
    setCell(n, cell("arbiter",1,0,direction,"",0,c.tier||0,c.phase||0));
@@ -1782,35 +1817,89 @@ function resolveLatcherPressure(){
  for(const n of NUMS){
   const c = getCell(n);
   if(c.kind!=="latcher") continue;
-  if(c.target && c.timer<=0){
-   const target = c.target;
-   if(ECO_KINDS.has(getCell(target).kind)){
-    const msg=damageEcoByProjectile(target,`${n}: L*${DIR_GLYPHS[c.direction]} attack`); if(msg) messages.push(msg);
-   } else messages.push(`${n}: L*${DIR_GLYPHS[c.direction]} found no eco at ${target}`);
+
+  if(c.phase===1 && c.timer<=0){
+   const target = latcherHitTile(n,c.direction);
+   if(target && ECO_KINDS.has(getCell(target).kind)){
+    const msg=damageEcoByProjectile(target,`${n}: L*${DIR_GLYPHS[c.direction]} attack`);
+    if(msg) messages.push(msg);
+   } else if(target){
+    messages.push(`${n}: L*${DIR_GLYPHS[c.direction]} found no eco at ${target}`);
+   } else {
+    messages.push(`${n}: L*${DIR_GLYPHS[c.direction]} found no tile`);
+   }
    const cur = getCell(n);
-   if(cur.kind==="latcher"){ cur.target=""; cur.timer=0; }
+   if(cur.kind==="latcher"){
+    cur.target="";
+    cur.timer=0;
+    cur.phase=0;
+   }
    continue;
   }
-  if(c.target && c.timer>0){ c.timer--; messages.push(`${n}: L*${DIR_GLYPHS[c.direction]} targeting ${c.target}`); continue; }
-  if(game.turn % 3 === 0){
-   const info = chooseLatcherTarget(n);
-   if(info){
-    c.target = info.target; c.direction = info.direction; c.timer = 1;
-    messages.push(`${n}: L*${DIR_GLYPHS[c.direction]} marked ${c.target}`);
+
+  if(c.phase===1 && c.timer>0){
+   const target = latcherHitTile(n,c.direction);
+   c.timer--;
+   messages.push(`${n}: L*${DIR_GLYPHS[c.direction]} targeting ${target || "no tile"}`);
+   continue;
+  }
+
+  if(c.phase===0){
+   const direction = latcherSpawnDirectionForTile(n,c.direction);
+   const target = latcherHitTile(n,direction);
+   if(target){
+    c.target="";
+    c.direction=direction;
+    c.timer=(c.tier||0)===0 ? 1 : 2;
+    c.phase=1;
+    messages.push(`${n}: L${DIR_GLYPHS[c.direction]} loaded`);
    }
   }
  }
  return messages;
 }
 function chooseLatcherTarget(n){
- const direction = chooseDirectionWithEco(n,true);
- const target = furthestEcoInDirection(n,direction);
+ if(n==="5") return null;
+
+ const c = getCell(n);
+ const direction = latcherSpawnDirectionForTile(n,c.direction);
+ const target = latcherHitTile(n,direction);
  return target ? {target,direction} : null;
 }
 function forwardTile(n,direction){
  const [r,c] = NUM_TO_POS[n];
  const [dr,dc] = DIRS[direction];
  return POS_TO_NUM[`${r+dr},${c+dc}`] || null;
+}
+function latcherHitTile(n,direction){
+ const first = forwardTile(n,direction);
+ if(!first) return null;
+ return forwardTile(first,direction);
+}
+function latcherSpawnDirectionForTile(n, preferredDirection){
+ if(n==="8") return 2;
+ if(n==="4") return 1;
+ if(n==="6") return 3;
+ if(n==="2") return 0;
+
+ const inwardByCorner = {
+  "7":[1,2],
+  "9":[3,2],
+  "1":[1,0],
+  "3":[3,0]
+ };
+
+ if(inwardByCorner[n]){
+  const options = inwardByCorner[n];
+  if(options.includes(preferredDirection)) return preferredDirection;
+  const tileSalt = Number.parseInt(n,10) * 1009;
+  const roll = chanceFor(game.pressureSeed + tileSalt, game.turn);
+  return options[Math.floor(roll * options.length)];
+ }
+
+ // Center latchers are intentionally inert.
+ // They occupy 5, but do not load an arc.
+ return preferredDirection;
 }
 function resolveExecutorPressure(){
  const messages = [];
@@ -2033,11 +2122,9 @@ function enterCollapse(reason){
 }
 
 function nextSpawnKind(){
- if(!game.spawnBag.length){
-  game.spawnBag = [...SPAWN_KIND_ORDER];
-  shuffle(game.spawnBag, game.rng);
- }
- return game.spawnBag.pop();
+ const bag = [...SPAWN_KIND_ORDER];
+ shuffle(bag, deterministicRngFor(game.spawnIndex, 77777));
+ return bag[game.spawnIndex % bag.length];
 }
 function maybeSpawnCombatant(){
  if(!game.spawningEnabled) return null;
@@ -2061,7 +2148,7 @@ function maybeSpawnCombatant(){
   let spawnTile = plan ? plan.tile : "";
   const rawTier = rollTier(game.turn);
   const tier = resolveTierForSpawn(rawTier, spawnKind, highTierServedThisTurn, i);
-  const direction = plan ? plan.direction : Math.floor(game.rng()*4);
+  const direction = plan ? plan.direction : plannedDirectionForSlot(i);
 
   if(!spawnTile || getCell(spawnTile).kind!=="empty" || spawnedTiles.has(spawnTile)){
    let laneChoice = null;
@@ -2088,8 +2175,12 @@ function maybeSpawnCombatant(){
   if(tier>0) highTierServedThisTurn = true;
   rememberSpawn(game.turn, spawnKind, tier);
   if(spawnKind==="latcher"){
-   setCell(spawnTile, cell("latcher", tier===2?4:(tier===1?3:2),0,1,"",0,tier,0));
-   messages.push(`${spawnTile}: latcher appeared`);
+   const latcherDirection = latcherSpawnDirectionForTile(spawnTile, direction);
+   const latcherTarget = spawnTile==="5" ? "" : (latcherHitTile(spawnTile, latcherDirection) || "");
+   const latcherTimer = latcherTarget ? (tier===0 ? 1 : 2) : 0;
+   const latcherPhase = latcherTarget ? 1 : 0;
+   setCell(spawnTile, cell("latcher", tier===2?4:(tier===1?3:2),0,latcherDirection,"",latcherTimer,tier,latcherPhase));
+   messages.push(`${spawnTile}: latcher appeared${latcherTarget ? ` ${DIR_GLYPHS[latcherDirection]}` : ""}`);
   }
   else if(spawnKind==="arbiter"){
    setCell(spawnTile, cell("arbiter",0,0,direction,"",0,tier,0));
@@ -2297,7 +2388,7 @@ function closeSharePreview(){
 }
 
 
-const WATCHER_RESET_HOLD_MS = 2000;
+const WATCHER_RESET_HOLD_MS = 1250;
 const WATCHER_TAP_MAX_MS = 350;
 let watcherHoldTimer = null;
 let watcherHoldStartedAt = 0;
