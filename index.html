@@ -133,6 +133,20 @@ body.collapse-state .shareCollapseWrap{
 .tile.empty{color:#34313d}
 .tile span{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:clip;}
 
+@media (max-width:620px){
+ .tile.selected,
+ .tile.rootChoosing{
+  outline:0;
+  border-color:rgba(155,92,255,.82);
+  box-shadow:inset 0 0 0 2px rgba(155,92,255,.82),0 0 0 2px rgba(155,92,255,.18),0 10px 26px rgba(0,0,0,.28),0 0 18px rgba(155,92,255,.24);
+ }
+ .tile.targetable{
+  outline:0;
+  border-color:rgba(255,255,255,.20);
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.16),0 8px 22px rgba(0,0,0,.22);
+ }
+}
+
 .log{min-height:0;background:transparent;border:0;padding:4px 4px;font-size:12px;line-height:1.25;color:var(--dim);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .help{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10;padding:18px;overflow:auto;}
 .help.visible{display:block}
@@ -152,37 +166,63 @@ body.collapse-state .shareCollapseWrap{
 
 .rootOptions{
  position:absolute;
- inset:8px;
- display:flex;
- flex-direction:column; max-width:100%;
- gap:8px;
- justify-content:center;
- align-items:stretch;
+ inset:0;
+ display:grid;
+ grid-template-columns:1fr 1fr;
  z-index:3;
+ border-radius:inherit;
+ background:transparent;
 }
 .rootOptions button{
- padding:8px 6px;
- border-radius:10px;
- font-size:clamp(12px,3.2vw,15px);
- background:#202033;
- border:1px solid #45405b;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ width:100%;
+ height:100%;
+ min-height:0;
+ padding:0;
+ border:0;
+ border-radius:0;
+ background:transparent;
+ background-image:none;
+ box-shadow:none;
+ font:inherit;
+ font-size:clamp(22px,5.4vw,34px);
+ font-weight:900;
+ line-height:1;
+ cursor:pointer;
+ appearance:none;
+ -webkit-appearance:none;
 }
-.rootOptions button.cancel{
- background:#161620;
- border-color:#2c2a38;
- color:var(--muted);
+.rootOptions button:hover,
+.rootOptions button:active,
+.rootOptions button:focus{
+ background:transparent;
+ background-image:none;
+ box-shadow:none;
+ outline:0;
+ transform:none;
+}
+.rootOptions button.rootFlare{
+ color:#ff5fd2;
+ text-shadow:0 0 10px rgba(255,95,210,.46);
+}
+.rootOptions button.rootCharge{
+ color:#8f7cff;
+ text-shadow:0 0 10px rgba(143,124,255,.44);
 }
 .tile.rootChoosing{
- outline:2px solid rgba(215,103,255,.75);
- box-shadow:0 0 0 4px rgba(215,103,255,.12),0 10px 26px rgba(0,0,0,.28);
+ outline:2px solid var(--violet);
+ box-shadow:0 0 0 4px rgba(155,92,255,.12),0 10px 26px rgba(0,0,0,.28),0 0 18px rgba(155,92,255,.26);
 }
-
 
 .watcherWrap{
  display:flex;
  justify-content:center;
  align-items:center;
  margin:10px 0 4px;
+ position:relative;
+ z-index:8;
 }
 .watcher{
  width:78px;
@@ -257,120 +297,47 @@ body.collapse-state .watcher.resetHold{
  }
 }
 
-
-
-
-
-.tile.hasPreview::after{
- content:"";
+.boardIngressLayer{
  position:absolute;
- opacity:.45;
+ inset:0;
  pointer-events:none;
- filter:drop-shadow(0 0 4px currentColor);
- z-index:2;
+ z-index:4;
+ overflow:visible;
 }
-.tile.previewDanger::after{
- animation:previewDangerPulse .72s ease-in-out infinite;
- opacity:.86;
- filter:drop-shadow(0 0 7px currentColor);
-}
-@keyframes previewDangerPulse{
- 0%{opacity:.42;filter:drop-shadow(0 0 3px currentColor);}
- 50%{opacity:1;filter:drop-shadow(0 0 10px currentColor);}
- 100%{opacity:.42;filter:drop-shadow(0 0 3px currentColor);}
-}
-.tile.preview-arbiter::after{color:var(--arb);}
-.tile.preview-latcher::after{color:var(--lat);}
-.tile.preview-executor::after{color:var(--exe);}
-.tile.preview-mixed::after{color:var(--warn);}
-
-.tile.preview-left::after,
-.tile.preview-right::after{
- top:14%;
- bottom:14%;
- width:7px;
- background-repeat:repeat-y;
- background-size:7px 18px;
- background-image:linear-gradient(135deg, transparent 0 34%, currentColor 35% 49%, transparent 50% 100%);
-}
-.tile.preview-left::after{left:-6px;}
-.tile.preview-right::after{right:-6px;}
-
-.tile.preview-top::after,
-.tile.preview-bottom::after{
- left:14%;
- right:14%;
- height:7px;
- background-repeat:repeat-x;
- background-size:18px 7px;
- background-image:linear-gradient(135deg, transparent 0 34%, currentColor 35% 49%, transparent 50% 100%);
-}
-.tile.preview-top::after{top:-6px;}
-.tile.preview-bottom::after{bottom:-6px;}
-
-
-
-.chargeToken{color:#7f6dff;}
-.flareToken{color:#ff5fd2;}
-.rootOptions{
- display:grid;
- grid-template-columns:1fr 1fr;
- gap:8px;
- align-items:center;
-}
-.rootOptions button{
- min-width:0;
- font-size:clamp(18px,5vw,24px);
- font-weight:800;
-}
-.rootOptions button.rootFlare{
- color:#ff5fd2;
- border-color:rgba(255,95,210,.72);
- background:rgba(255,95,210,.10);
-}
-.rootOptions button.rootCharge{
- color:#7f6dff;
- border-color:rgba(127,109,255,.72);
- background:rgba(127,109,255,.10);
-}
-.rootOptions button.rootCancel{
- grid-column:1 / span 2;
- font-size:clamp(12px,3.2vw,14px);
- font-weight:700;
-}
-
-
-.rootOptions{
- inset:9px;
- display:grid;
- grid-template-columns:1fr 1fr;
- grid-template-rows:1fr auto;
- gap:8px;
- align-items:stretch;
-}
-.rootOptions button.rootFlare,
-.rootOptions button.rootCharge{
- height:100%;
- min-height:72px;
- border-radius:16px;
- font-size:clamp(26px,7vw,36px);
- font-weight:900;
+.ingressMark{
+ position:absolute;
  display:flex;
  align-items:center;
  justify-content:center;
+ width:var(--ingressGlyphSize,18px);
+ height:var(--ingressGlyphSize,18px);
+ line-height:var(--ingressGlyphSize,18px);
+ font-size:var(--ingressGlyphSize,18px);
+ font-weight:900;
+ letter-spacing:0;
+ opacity:.50;
+ color:currentColor;
+ filter:drop-shadow(0 0 4px currentColor);
+ pointer-events:none;
+ transform-origin:center center;
 }
-.rootOptions button.rootCancel{
- grid-column:1 / span 2;
- min-height:34px;
- border-radius:12px;
- font-size:clamp(12px,3.2vw,14px);
- font-weight:700;
- color:var(--eco);
- border-color:rgba(155,92,255,.72);
- background:rgba(155,92,255,.10);
+.ingressMark.previewDanger{
+ animation:previewDangerPulse .72s ease-in-out infinite;
+ opacity:.74;
+ filter:drop-shadow(0 0 7px currentColor);
 }
+@keyframes previewDangerPulse{
+ 0%{opacity:.40;filter:drop-shadow(0 0 3px currentColor);}
+ 50%{opacity:.92;filter:drop-shadow(0 0 10px currentColor);}
+ 100%{opacity:.40;filter:drop-shadow(0 0 3px currentColor);}
+}
+.ingressMark.preview-arbiter{color:var(--arb);}
+.ingressMark.preview-latcher{color:var(--lat);}
+.ingressMark.preview-executor{color:var(--exe);}
+.ingressMark.preview-mixed{color:var(--warn);}
 
-
+.chargeToken{color:#7f6dff;}
+.flareToken{color:#ff5fd2;}
 /* header polish: let mobile subtitle breathe */
 @media (max-width:420px){
  .header{
@@ -405,7 +372,6 @@ body.collapse-state .watcher.resetHold{
  }
 }
 
-
 @media (max-width:420px){
  .buttons{
   grid-area:buttons;
@@ -419,8 +385,6 @@ body.collapse-state .watcher.resetHold{
  }
 }
 
-
-
 .boardDanger #board{
  box-shadow:
   0 0 28px rgba(255,80,80,.48),
@@ -433,7 +397,6 @@ body.collapse-state .watcher.resetHold{
  100%{filter:brightness(1);}
 }
 
-
 @media (max-width: 700px){
  .legend-row{
   font-size:14px;
@@ -441,7 +404,6 @@ body.collapse-state .watcher.resetHold{
   flex-wrap:wrap;
  }
 }
-
 
 body.collapse-state .tile{
  background:linear-gradient(180deg,#070709,#050506);
@@ -459,7 +421,6 @@ body.collapse-state .tile.selected{
  border-color:rgba(120,120,140,.28);
  box-shadow:none;
 }
-
 
 body.collapse-state #log{
  color:#8d93a1 !important;
@@ -479,8 +440,6 @@ body.collapse-state .footerKey{
  letter-spacing:.01em;
  line-height:1.15;
 }
-
-
 
 @media (max-width:420px){
  .helpBox{
@@ -513,7 +472,6 @@ body.collapse-state .footerKey{
   padding:10px;
  }
 }
-
 
 .sharePreview{
  display:none;
@@ -565,7 +523,6 @@ body.collapse-state .footerKey{
  -webkit-user-select:auto;
  -webkit-touch-callout:default;
 }
-
 
 /* mobile viewport fit: keep game above browser gesture bar */
 @media (max-width:420px){
@@ -675,7 +632,7 @@ body.collapse-state .footerKey{
   font-size:11px;
  ">
   <div style="display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;">
-    <span class="eco" style="flex-shrink:0;">eco: R | C0-C1-C2 | F-f</span>
+    <span class="eco" style="flex-shrink:0;">eco: R | F-f | C0-C1-C2</span>
   </div>
   <div style="display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;">
     <span class="arb" style="flex-shrink:0;">arbiter: A</span>
@@ -696,8 +653,8 @@ body.collapse-state .footerKey{
 <h3>economy</h3>
 <ul>
 <li><span class="eco">R</span> becomes <span class="flareToken">F</span> or <span class="chargeToken">C0</span> instantly</li>
-<li><span class="chargeToken">C0→C1→C2</span> grows over time</li>
 <li><span class="flareToken">F→f→gone</span> fades over time</li>
+<li><span class="chargeToken">C0→C1→C2</span> grows over time</li>
 </ul>
 
 <h3>power</h3>
@@ -721,7 +678,7 @@ body.collapse-state .footerKey{
 
 <h3>shift order</h3>
 <ul>
-<li><span class="eco">R</span> <span class="chargeToken">C</span> <span class="flareToken">F</span> grow / fade</li>
+<li><span class="eco">R</span> <span class="flareToken">F</span> <span class="chargeToken">C</span> grow / fade</li>
 <li><span class="arb">A</span> locks / fires</li>
 <li><span class="lat">L</span> loads / attacks</li>
 <li><span class="exe">E</span> moves / destroys</li>
@@ -739,7 +696,6 @@ body.collapse-state .footerKey{
 
 <h3>collapse</h3>
 <p>incoming pressure cannot enter</p>
-
 
   </div>
 </div>
@@ -904,11 +860,6 @@ function powerSummaryPlain(n){
  if(c.kind==="charge" && c.value===0) return `${n}:C0 building`;
  return n;
 }
-function powerHint(){
- const p = powerTiles();
- if(!p.length) return "";
- return " use " + p.map(powerSummaryPlain).join(" or ");
-}
 function strongSummary(){
  const f = game.strongFlags;
  const parts = [];
@@ -986,7 +937,6 @@ function maxLatcherVitality(tier){
  return 2;
 }
 
-
 function finalBoardMessage(messages){
  if(!messages || !messages.length) return "";
 
@@ -1008,6 +958,7 @@ function finalBoardMessage(messages){
   "found no eco",
   "found no tile",
   "blocked",
+  "watcher no longer remembers",
   "no earlier state remains",
   "appeared"
  ];
@@ -1023,7 +974,6 @@ function joinFirst(base, messages){
  const final = finalBoardMessage(messages);
  return final ? `${base} · ${final}` : base;
 }
-
 
 function edgeEmptyTiles(){
  return emptyTiles().filter(n=>{
@@ -1169,29 +1119,10 @@ function ensurePlannedSpawn(){
  return plans.length ? plans[0] : null;
 }
 
-function pressurePreview(){
- const plans = ensurePlannedSpawns();
- if(!plans.length) return {};
- const out = {};
- for(const plan of plans){
-  for(const n of plan.previewTiles){
-   const existing = out[n];
-   out[n] = {
-    kind: existing && existing.kind!==plan.kind ? "mixed" : plan.kind,
-    dir: plan.previewDir,
-    count: existing ? existing.count + 1 : 1
-   };
-  }
- }
- return out;
-}
-
 function incomingSpawnCanCollapse(){
  if(!boardIsFull()) return false;
- const preview = pressurePreview();
- return Object.keys(preview).length > 0;
+ return pressurePreviewEdges().length > 0;
 }
-
 
 function dangerStateFromEmptyCount(emptyCount, spawnCountNow, spawnCountNext){
  // Red means only this:
@@ -1205,12 +1136,142 @@ function boardDangerState(){
  return dangerStateFromEmptyCount(0,0,0);
 }
 
-
 function dailySeedForDate(dateObj=new Date()){
  const year = dateObj.getFullYear();
  const month = dateObj.getMonth() + 1;
  const day = dateObj.getDate();
  return (year * 10000 + month * 100 + day) >>> 0;
+}
+
+function previewEdgeName(dir){
+ if(dir==="preview-left") return "left";
+ if(dir==="preview-right") return "right";
+ if(dir==="preview-top") return "top";
+ if(dir==="preview-bottom") return "bottom";
+ return "bottom";
+}
+
+function previewGlyphSpec(kind, dir){
+ const edge = previewEdgeName(dir);
+ const inwardRotationByEdge = {
+  left: 0,
+  right: 180,
+  top: 90,
+  bottom: 270
+ };
+
+ if(kind==="executor"){
+  return {glyph:"E", rotation:inwardRotationByEdge[edge]};
+ }
+
+ if(kind==="arbiter"){
+  const rotationByEdge = {
+   left: 90,
+   right: 270,
+   top: 180,
+   bottom: 0
+  };
+  return {glyph:"A", rotation:rotationByEdge[edge]};
+ }
+
+ if(kind==="latcher"){
+  const rotationByEdge = {
+   left: 270,
+   right: 90,
+   top: 0,
+   bottom: 180
+  };
+  return {glyph:"L", rotation:rotationByEdge[edge]};
+ }
+
+ return {glyph:"+", rotation:0};
+}
+
+function pressurePreviewEdges(){
+ const plans = ensurePlannedSpawns();
+ const edges = {};
+ for(const plan of plans){
+  const edge = previewEdgeName(plan.previewDir);
+  const existing = edges[edge];
+  edges[edge] = {
+   edge,
+   kind: existing && existing.kind!==plan.kind ? "mixed" : plan.kind
+  };
+ }
+ return Object.values(edges);
+}
+
+function edgeTileNames(edge){
+ if(edge==="left") return ["7","4","1"];
+ if(edge==="right") return ["9","6","3"];
+ if(edge==="top") return ["7","8","9"];
+ if(edge==="bottom") return ["1","2","3"];
+ return [];
+}
+
+function placeIngressPreviewLayer(board, previewEdges, dangerActive){
+ if(!previewEdges.length) return;
+ const layer = document.createElement("div");
+ layer.className = "boardIngressLayer";
+ board.appendChild(layer);
+
+ const tileByName = {};
+ for(const tile of board.querySelectorAll(".tile[data-n]")){
+  tileByName[tile.dataset.n] = tile;
+ }
+
+ const glyphsPerTile = 4;
+
+ for(const preview of previewEdges){
+  const names = edgeTileNames(preview.edge);
+  const tiles = names.map(n => tileByName[n]).filter(Boolean);
+  if(tiles.length!==3) continue;
+
+  const vertical = preview.edge==="left" || preview.edge==="right";
+  const sampleTile = tiles[0];
+  const tileSize = Math.min(sampleTile.offsetWidth, sampleTile.offsetHeight);
+  const glyphSize = Math.max(14, tileSize * 0.115);
+  const endPadding = tileSize * 0.115;
+  const inwardNudge = glyphSize * 0.34;
+  const spec = previewGlyphSpec(preview.kind, `preview-${preview.edge}`);
+
+  for(const tile of tiles){
+   const tileStart = vertical ? tile.offsetTop + endPadding : tile.offsetLeft + endPadding;
+   const tileEnd = vertical ? tile.offsetTop + tile.offsetHeight - endPadding : tile.offsetLeft + tile.offsetWidth - endPadding;
+   const tileSpan = Math.max(0, tileEnd - tileStart);
+   const spacing = glyphsPerTile > 1 ? tileSpan / (glyphsPerTile - 1) : 0;
+
+   const edgeLine = vertical
+    ? (preview.edge==="left" ? tile.offsetLeft : tile.offsetLeft + tile.offsetWidth)
+    : (preview.edge==="top" ? tile.offsetTop : tile.offsetTop + tile.offsetHeight);
+
+   const inwardCenter = (()=>{
+    if(preview.edge==="left") return edgeLine + inwardNudge;
+    if(preview.edge==="right") return edgeLine - inwardNudge;
+    if(preview.edge==="top") return edgeLine + inwardNudge;
+    return edgeLine - inwardNudge;
+   })();
+
+   for(let i=0;i<glyphsPerTile;i++){
+    const mark = document.createElement("div");
+    mark.className = `ingressMark preview-${preview.kind}${dangerActive ? " previewDanger" : ""}`;
+    mark.textContent = spec.glyph;
+    mark.style.setProperty("--ingressGlyphSize", `${glyphSize}px`);
+    mark.style.transform = `rotate(${spec.rotation}deg)`;
+
+    const along = tileStart + i * spacing;
+    if(vertical){
+     mark.style.left = `${inwardCenter - glyphSize / 2}px`;
+     mark.style.top = `${along - glyphSize / 2}px`;
+    } else {
+     mark.style.left = `${along - glyphSize / 2}px`;
+     mark.style.top = `${inwardCenter - glyphSize / 2}px`;
+    }
+
+    layer.appendChild(mark);
+   }
+  }
+ }
 }
 
 function render(){
@@ -1221,15 +1282,14 @@ function render(){
   document.body.classList.remove("collapse-state");
  }
 
- const preview = pressurePreview();
  const status = document.getElementById("status");
  status.innerHTML = `
   <div class="row">
    <div>turn <b>${game.turn}</b> · cleared <b>${game.clearedCount}</b></div>
    <div class="muted">seed <input id="seedInput" class="seedInput" value="${game.runSeed}" inputmode="numeric" pattern="[0-9]*" aria-label="run seed"></div>
   </div>
-  
-  
+
+
   ${game.collapsed ? `<div class="warn">${game.collapseReason}</div>` : ""}
   ${boardDangerState()==="danger" && !game.collapsed ? `<div class="warn">collapse imminent</div>` : ""}
  `;
@@ -1278,12 +1338,9 @@ function render(){
   const div = document.createElement("div");
   div.className = `tile ${c.kind==="empty"?"empty":""} ${classForKind(c.kind)}`;
   if(game.selected===n) div.classList.add("selected");
-  if(preview[n]){
-   div.classList.add("hasPreview");
-   div.classList.add(`preview-${preview[n].kind}`);
-   div.classList.add(preview[n].dir);
-   if(incomingSpawnCanCollapse()){
-    div.classList.add("previewDanger");
+  if(game.mode==="rootChoice"){
+   if(n!==game.selected){
+    div.classList.add("badtarget");
    }
   }
   if(game.mode==="targeting"){
@@ -1301,9 +1358,8 @@ function render(){
    div.classList.add("rootChoosing");
    div.innerHTML = `
     <div class="rootOptions">
-     <button class="rootFlare" data-n="${n}">F</button>
-     <button class="rootCharge" data-n="${n}">C</button>
-     <button class="rootCancel cancel" data-n="${n}">R</button>
+     <button class="rootFlare" data-n="${n}" aria-label="create flare">F</button>
+     <button class="rootCharge" data-n="${n}" aria-label="create charge">C</button>
     </div>`;
   } else {
    const token = tokenFor(n);
@@ -1323,17 +1379,11 @@ function render(){
     e.stopPropagation();
     return;
    }
-   if(e.target.closest(".rootCancel")){
-    game.mode="normal"; game.selected="";
-    game.last=`<span class="releaseText">root released</span>`;
-    render();
-    e.stopPropagation();
-    return;
-   }
    tapTile(n);
   });
   board.appendChild(div);
  }
+ placeIngressPreviewLayer(board, pressurePreviewEdges(), incomingSpawnCanCollapse());
 
  const log = document.getElementById("log");
  log.innerHTML = game.last || `<span class="muted">plane is empty</span>`;
@@ -1417,14 +1467,19 @@ function passTime(){
  game.mode = "normal";
  game.selected = "";
  const msgs = resolveWorld("", "watcher", "");
- game.last = joinFirst("time passes", msgs);
+ const joined = msgs.join(" | ");
+ if(joined.includes("pressure overflow") || joined.includes("system collapsed")){
+  game.last = "pressure overflow · system collapsed";
+ } else {
+  game.last = joinFirst("time passes", msgs);
+ }
  game.turn++;
  render();
 }
 
 function rewindCollapseWithWatcher(){
  if(!game.history.length){
-  game.last = "no earlier state remains";
+  game.last = game.turn > 0 ? "watcher no longer remembers" : "no earlier state remains";
   render();
   return;
  }
@@ -1448,8 +1503,8 @@ function tapTile(n){
 
  if(game.mode==="rootChoice"){
   if(n!==game.selected){
-   game.mode="normal"; game.selected="";
-   game.last=`<span class="releaseText">root released</span>`;
+   game.mode="normal";
+   game.selected="";
    render();
    return;
   }
@@ -1533,12 +1588,11 @@ function tapTile(n){
   return;
  }
  if(action==="needs_power"){
-  game.last = `${n}: needs C2/C1/F first` + powerHint() + ` · no turn spent`;
+  game.last = "watcher acknowledges";
   render();
   return;
  }
 }
-
 
 function convertRootChoice(n, choice){
  if(game.mode!=="rootChoice" || game.selected!==n) return;
@@ -1994,8 +2048,6 @@ function rememberSpawn(turn, kind, tier){
  }
 }
 
-
-
 function baseSpawnCountForTurn(turnNumber=null){
  const t = turnNumber ?? game.turn;
 
@@ -2197,8 +2249,6 @@ function maybeSpawnCombatant(){
  return messages.length ? messages.join(" | ") : null;
 }
 
-
-
 function shareColorKindForCell(c){
  if(["root","charge","charge_dead","flare"].includes(c.kind)) return "eco";
  if(c.kind==="arbiter") return "arbiter";
@@ -2387,7 +2437,6 @@ function closeSharePreview(){
  currentShareFile = null;
 }
 
-
 const WATCHER_RESET_HOLD_MS = 1250;
 const WATCHER_TAP_MAX_MS = 350;
 let watcherHoldTimer = null;
@@ -2507,6 +2556,14 @@ watcherBtn.addEventListener("lostpointercapture", watcherPointerCancel);
 document.getElementById("helpBtn").onclick = () => document.getElementById("help").classList.add("visible");
 document.getElementById("closeHelp").onclick = () => document.getElementById("help").classList.remove("visible");
 document.getElementById("help").addEventListener("click",(e)=>{ if(e.target.id==="help") document.getElementById("help").classList.remove("visible"); });
+
+document.addEventListener("click",(e)=>{
+ if(game.mode!=="rootChoice") return;
+ if(e.target.closest(".tile")) return;
+ game.mode="normal";
+ game.selected="";
+ render();
+});
 
 newGame();
 
